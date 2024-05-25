@@ -1,7 +1,7 @@
 🚀 **Project Insights: Sentiment Analysis with Machine Learning Models and Explainable AI** 🚀
 
 🔗 GitHub-link: https://github.com/baloyi015/sentiment-analysis-xai.git
-
+🔗 Tools: Python & Jupyter-Notebook
 My recent project delved into the effectiveness of various machine learning models and explainable AI for sentiment analysis, particularly focusing on tweet classification. Here’s a summary of the key learnings:
 
 🔍 **Support Vector Machine (SVM)**
