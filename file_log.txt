@@ -1,0 +1,9 @@
+./notebook_cleaning.ipynb
+./.git/description
+./.git/packed-refs
+./.git/HEAD
+./.git/config
+./.git/index
+./.gitignore
+./README.md
+./file_log.txt
