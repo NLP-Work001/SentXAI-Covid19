@@ -1,9 +1,11 @@
-./notebook_cleaning.ipynb
+./notebook_v001.ipynb
 ./.git/description
 ./.git/packed-refs
 ./.git/HEAD
 ./.git/config
 ./.git/index
-./.gitignore
+./.git/COMMIT_EDITMSG
 ./README.md
 ./file_log.txt
+./notebook_v002.ipynb
+./.gitignore
