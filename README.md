@@ -1,25 +1,20 @@
-🚀 **Project Insights: Sentiment Analysis with Machine Learning Models and Explainable AI** 🚀
+## **CI/CD: Sentiment Analysis for Covid-19 Tweets Using Explainable AI**
 
-🔗 GitHub-link: https://github.com/baloyi015/sentiment-analysis-xai.git
+#### **Project Description:**
 
-🔗 Tools: Python & Jupyter-Notebook
+The dataset used in this project is open-sourced, [COVID-19 NLP Text Classification](https://www.kaggle.com/datasets/datatattle/covid-19-nlp-text-classification/data). It consists of COVID-19 tweets that are annotated into five labels: negative, extremely negative, positive, extremely positive, and neutral. For our purpose, we consolidated "negative" and "extremely negative" into "negative," and "positive" and "extremely positive" into "positive." The labels of interest will be "negative," "neutral," and "positive."
 
-My recent project delved into the effectiveness of various machine learning models and explainable AI for sentiment analysis, particularly focusing on tweet classification. Here’s a summary of the key learnings:
+The main objective is to compare different machine learning models and automate their experimentation workflow using Jenkins and GitHub Actions. Some of the tools used for experimentation will include MLflow and DVC. Furthermore, the best-performing model will be used in conjunction with LIME and SHAP values for interpretable and explainable artificial intelligence. Once model development and evaluation processes are completed, Django Rest Framework and Docker will be used to ensure that the model is easily containerized and deployed into the GitHub Container Registry. This will further ensure that the model can be tested through model serving using Docker images and be prepared for use in a web UI interface, although conducting the web UI for predictions is out of the scope of this project.
 
-🔍 **Support Vector Machine (SVM)**
-- **Skip-gram Word2Vec:** Although SVM accurately predicted negative sentiments, it misattributed neutral words (e.g., names, web links) to negative sentiments.
-- **CBOW Word2Vec:** Similar misattributions were noted, with neutral words like "believe" and "social" incorrectly flagged as negative.
-- **TF-IDF:** Demonstrated better performance by accurately attributing sentiments, though some inconsistencies remain.
+The main goal is to demonstrate the process of CI/CD automation in the field of machine learning while applying MLOps best practices.
 
-🔍 **Logistic Regression**
-- **Skip-gram Word2Vec:** Struggled with accuracy, often predicting incorrect sentiments.
-- **CBOW Word2Vec:** More accurate in predicting negative sentiments but still faced misattribution issues.
-- **TF-IDF:** Showcased the best performance, accurately predicting sentiments and correctly attributing words to their respective sentiments.
+#### **Project Substages:**
 
-🌟 **Key Takeaway**
-Logistic regression combined with TF-IDF emerged as the most reliable model, accurately predicting tweet sentiments and correctly attributing words. The integration of LIME (Local Interpretable Model-agnostic Explanations) further enhanced model transparency and interpretability, providing clear insights into decision-making processes.
+* **Stage 1 (notebooks/):**
+    * Data cleaning and data loading: `notebook_v001`
+    * Data analysis: `notebook_v002`
+    * Model development and evaluation without thorough experimentation: `notebook_v003`
 
-🔗 **Why It Matters**
-This project underscores the importance of model choice and data representation in sentiment analysis. By leveraging explainable AI tools, we can build models that are not only accurate but also transparent and trustworthy.
+* **Stage 2: Model Development**
 
-#MachineLearning #DataScience #SentimentAnalysis #NLP #AI #ModelInterpretability #ProjectInsights
+* **Stage 3: Model Deployment**
