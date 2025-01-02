@@ -3,12 +3,12 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 
 # Load processed dataset
-FILE_DIR = "data/processed"
-FILE_PATH = Path(f"{FILE_DIR}/covid19_tweets.csv")
+filename = "covid19_tweets.csv"
+folder_dir = "data/processed"
+file_path = Path(f"{folder_dir}") / filename
 
-pd.set_option("display.max_colwidth", None)
 
-df = pd.read_csv(FILE_PATH) \
+df = pd.read_csv(file_path) \
     .dropna() \
     .reset_index(drop=True) \
     .drop("tweet", axis=1)
@@ -24,18 +24,23 @@ def split_data(df, test_size=0.2, random_state=43):
 
     return X_train, X_test, y_train, y_test
 
-X_train, X_test, y_train, y_test = split_data(df)
 
-# Create dataframes
-train_ = pd.concat([X_train, y_train], axis=1).reset_index(drop=True)
-test_ = pd.concat([X_test, y_test], axis=1).reset_index(drop=True)
+def main() -> None:
+    
+    X_train, X_test, y_train, y_test = split_data(df)
 
-if __name__ == "__main__":
+    # Create dataframes
+    train_ = pd.concat([X_train, y_train], axis=1).reset_index(drop=True)
+    test_ = pd.concat([X_test, y_test], axis=1).reset_index(drop=True)
+    
     # Output file names
-    OUTPUT_DIR = "data/splits"
-    TRAIN_FILE = Path(f"{OUTPUT_DIR}/train.csv")
-    TEST_FILE = Path(f"{OUTPUT_DIR}/test.csv")
+    split_output_dir = "data/splits"
+    train_filename = Path(f"{split_output_dir}/train.csv")
+    test_filename = Path(f"{split_output_dir}/test.csv")
 
     # File split load
-    train_.to_csv(TRAIN_FILE, index=False)
-    test_.to_csv(TEST_FILE, index=False)
+    train_.to_csv(train_filename, index=False)
+    test_.to_csv(test_filename, index=False)
+
+if __name__ == "__main__":
+    main()
