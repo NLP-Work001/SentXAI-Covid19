@@ -92,19 +92,10 @@ def model_pipeline(
     returns: pipeline ready for training
     """
     if isinstance(vect_ngram_, list) and vect_norm_ is None:
-        vect = TfidfVectorizer(
-            analyzer="word",
-            tokenizer=word_processor,
-            preprocessor=word_processor,
-        )
+        vect = TfidfVectorizer(preprocessor=word_processor)
     else:
-        vect = TfidfVectorizer(
-            ngram_range=vect_ngram_,
-            norm=vect_norm_,
-            analyzer="word",
-            tokenizer=word_processor,
-            preprocessor=word_processor,
-        )
+        vect = TfidfVectorizer(preprocessor=word_processor)
+        
     ct = make_column_transformer((vect, "text"), remainder="drop")
     pipeline = make_pipeline(ct, baseline)
     return pipeline
@@ -115,4 +106,3 @@ def load_parameters(file_name: str) -> dict:
     with open(file_name, "r") as f:
         params = yaml.safe_load(f)
     return params
-

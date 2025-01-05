@@ -4,3 +4,6 @@ data:
   split:
     - train.csv
     - test.csv
+
+cross_valid:
+  model: knn

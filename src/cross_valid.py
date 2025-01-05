@@ -16,8 +16,13 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
 
@@ -168,8 +173,19 @@ if __name__ == "__main__":
     y_all_ = data[["sentiment"]]
 
     # Training: cross validation process
+    seed = 43
+    models = {
+        "bayes": MultinomialNB(),
+        "svm": SVC(probability=True),
+        "knn": KNeighborsClassifier(),
+        "logistic": LogisticRegression(max_iter=100, random_state=seed),
+        "rforest": RandomForestClassifier(random_state=seed),
+        "tree": DecisionTreeClassifier(random_state=seed),
+    }
+
     print("Started cross validation ...")
-    model = DecisionTreeClassifier(random_state=43)
+    model_type = parameters["cross_valid"]["model"]
+    model = models[model_type]
     model_name = f"{model.__class__.__name__}".lower()
 
     scores_ = cross_validation_func(model, x_all_, y_all_)
