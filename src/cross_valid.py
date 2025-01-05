@@ -96,7 +96,7 @@ def cross_validation_func(
     pipe = model_pipeline(baseline)
 
     label_encoding = LabelEncoder()
-    y_all_ = label_encoding.fit_transform(y)
+    y_all = label_encoding.fit_transform(y)
 
     # Cross-Validation
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=43)
@@ -106,10 +106,10 @@ def cross_validation_func(
     time_start = time.time()
     time_lapsed = None
 
-    for idx, (train_idx, val_idx) in tqdm(enumerate(cv.split(x, y_all_))):
+    for idx, (train_idx, val_idx) in tqdm(enumerate(cv.split(x, y_all))):
         print(" Iteration Count:", idx + 1)
         x_train_, x_val_ = x.iloc[train_idx], x.iloc[val_idx]
-        y_train_, y_val_ = y_all_[train_idx], y_all_[val_idx]
+        y_train_, y_val_ = y_all[train_idx], y_all[val_idx]
 
         pipe.fit(x_train_, y_train_)
 
@@ -163,26 +163,25 @@ if __name__ == "__main__":
     date_time = _date_time_record(args.date)
     file_out_name = "cross_valid" + "_" + date_time + ".png"
 
-    # data = pd.read_csv(file_path)
+    data = pd.read_csv(file_path)
+    x_all_ = data[["text"]]
+    y_all_ = data[["sentiment"]]
 
-    # x_all_ = data[["text"]]
-    # y_all_ = data[["sentiment"]]
-
-    # Training
+    # Training: cross validation process
+    print("Started cross validation ...")
     model = DecisionTreeClassifier(random_state=43)
     model_name = f"{model.__class__.__name__}".lower()
-    os.makedirs(model_name, exist_ok=True)
+
+    scores_ = cross_validation_func(model, x_all_, y_all_)
 
     plot_output = Path(f"{args.out}/{model_name}") / file_out_name
+    os.makedirs(plot_output.parent, exist_ok=True)
 
-    print("Parent path: ", plot_output.parent)
-    # joblib.dump(model, plot_output.parent)
-
-    print("File input path: ", file_path)
-    print("Image file output name: ", file_out_name)
-    print("Plot output file: ", plot_output)
-
-    # knn_scores = cross_validation_func(model, x_all_, y_all_)
-
-    # # Save plot
-    # cross_valid_score_plot(knn_scores, "cv_metric_plot.png", 150)
+    cross_valid_score_plot(scores_, plot_output)
+    model_out = Path(plot_output.parent) / "model.pkl"
+    joblib.dump(model, model_out)
+    # print("Process ended.")
+    # print("Parent path: ", plot_output.parent)
+    # print("File input path: ", file_path)
+    # print("Image file output name: ", file_out_name)
+    # print("Plot output file: ", plot_output)
