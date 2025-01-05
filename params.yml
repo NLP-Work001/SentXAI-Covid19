@@ -6,4 +6,4 @@ data:
     - test.csv
 
 cross_valid:
-  model: knn
+  model: rf

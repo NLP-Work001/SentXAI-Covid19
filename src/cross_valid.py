@@ -179,7 +179,7 @@ if __name__ == "__main__":
         "svm": SVC(probability=True),
         "knn": KNeighborsClassifier(),
         "logistic": LogisticRegression(max_iter=100, random_state=seed),
-        "rforest": RandomForestClassifier(random_state=seed),
+        "rf": RandomForestClassifier(random_state=seed),
         "tree": DecisionTreeClassifier(random_state=seed),
     }
 
