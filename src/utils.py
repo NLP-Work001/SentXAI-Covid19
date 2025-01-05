@@ -1,37 +1,46 @@
+"""This script carries functions or methods across the project tree."""
+
 import os
-import time
+from pathlib import Path
+from typing import Union
+
+import yaml
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import seaborn as sns
-from pathlib import Path
-from datetime import timedelta
-from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import LabelEncoder
 from sklearn.compose import make_column_transformer
-from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.pipeline import make_pipeline
 
 
 # TFIDf token function
 def word_processor(doc: str):
+    """Used for tfidf tokenizer and
+    preprocessor.
+    param: doc -> string
+    returns: single word
+    """
     return doc
 
 
 # Calculate model metrics and output as a dictionary of those metrics
-def calculate_model_metrics(model: BaseEstimator, X_values: pd.DataFrame, y_true: list) -> dict:
+def calculate_metric_score(
+    model: BaseEstimator, x_values: pd.DataFrame, y_true: list
+) -> dict:
+    """Computes trained model metric scores.
+    returns: calculated scores as a dictionary.
+    """
+    f1 = f1_score(y_true, model.predict(x_values), average="weighted")
+    roc_auc = roc_auc_score(
+        y_true, model.predict_proba(x_values), average="weighted", multi_class="ovo"
+    )
 
-    f1 = f1_score(y_true, model.predict(X_values), average="weighted")
-    roc_auc =  roc_auc_score(y_true, model.predict_proba(X_values),  average="weighted", multi_class="ovo")
-
-    metrics = dict(f1=np.round(f1, 2), roc_auc=np.round(roc_auc, 2))
+    metrics = {"f1": np.round(f1, 2), "roc_auc": np.round(roc_auc, 2)}
     return metrics
 
 
-def calculate_average_cv(metrics:list, alias="train") -> dict:
+def calculate_average_cv(metrics: list, alias="train") -> dict:
     """Calculates the average cross-validation scores.
     params: metrics - list of cv metrics
     returns: average cv scores
@@ -41,17 +50,17 @@ def calculate_average_cv(metrics:list, alias="train") -> dict:
     score_avg = np.mean(values, axis=0)
     cv_metrics = {f"{alias}_{n}": np.round(v, 2) for n, v in zip(keys, score_avg)}
     cv_scores = {f"{alias}_avg": np.round(np.mean(score_avg), 2), **cv_metrics}
-    
-    return cv_scores 
+
+    return cv_scores
 
 
 # Load train/test split data
 def load_train_split(file_name: str) -> pd.DataFrame:
-    """ Load train/test dataset from splits folder.
+    """Load train/test dataset from splits folder.
     params: File path
     returns: pandas dataframe
     """
-    folder_dir = Path(os.path.abspath("..")) / "data/splits"
+    folder_dir = Path(os.path.abspath(".")) / "data/splits"
     file_path = os.path.join(folder_dir, file_name)
     df = pd.read_csv(file_path)
     return df
@@ -59,11 +68,11 @@ def load_train_split(file_name: str) -> pd.DataFrame:
 
 # Convert numerical labels into named labels
 def get_output_label(encoding, index, size=3) -> str:
-   
+    """Used for retrieving original label name."""
     try:
         if index >= size:
             raise ValueError("Index must be less than number of classes.")
-        
+
         arr = np.zeros(3, dtype=int)
         arr[index] = 1
         arr = arr.reshape(1, size)
@@ -72,3 +81,38 @@ def get_output_label(encoding, index, size=3) -> str:
         return output
     except ValueError as e:
         print(f"Error: {e}")
+        return ""
+
+
+# Model training pipeline
+def model_pipeline(
+    baseline: BaseEstimator, vect_ngram_: Union[tuple, list] = (1, 1), vect_norm_="l2"
+):
+    """This is the model pipeline in scikit-learn library.
+    returns: pipeline ready for training
+    """
+    if isinstance(vect_ngram_, list) and vect_norm_ is None:
+        vect = TfidfVectorizer(
+            analyzer="word",
+            tokenizer=word_processor,
+            preprocessor=word_processor,
+        )
+    else:
+        vect = TfidfVectorizer(
+            ngram_range=vect_ngram_,
+            norm=vect_norm_,
+            analyzer="word",
+            tokenizer=word_processor,
+            preprocessor=word_processor,
+        )
+    ct = make_column_transformer((vect, "text"), remainder="drop")
+    pipeline = make_pipeline(ct, baseline)
+    return pipeline
+
+
+# Read Script parameters
+def load_parameters(file_name: str) -> dict:
+    with open(file_name, "r") as f:
+        params = yaml.safe_load(f)
+    return params
+

@@ -1,28 +1,49 @@
+"""This script helps to evaluate a trained model by plotting
+ROC and AUC curve. It consists of single function that calculates
+multiple false and true postive rates, in addition label or class
+averages are computed to find the best average for a selected model.
+"""
+
 import numpy as np
-from .utils import *
+import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import auc, roc_curve
+from sklearn.preprocessing import LabelBinarizer
+
+from utils import get_output_label
+
 
 # Plot ROC curve and ROC area
-def plot_roc_auc_curve(model: BaseEstimator, y_test_, X_test_) -> None:
-    
-    fpr = dict()
-    tpr = dict() 
-    roc_auc = dict()
+def plot_roc_auc_curve(
+    model: BaseEstimator,
+    encoding: LabelBinarizer,
+    y_test_: np.matrix,
+    x_test_: pd.DataFrame,
+) -> None:
+    """This function helps to plot roc and auc curve for model evaluation
+    purposes.
+
+    param: model -> scikit-learn type
+    param: y_test_ -> matrix-like array (n_samples, n_classes)
+    param: x_test_ -> pandas dataframe
+
+    returns: None
+    """
+    fpr = {}
+    tpr = {}
+    roc_auc = {}
     n_classes = len(set(y_test_.argmax(axis=1)))
-    y_scores = model.predict_proba(X_test_)
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
+    y_scores = model.predict_proba(x_test_)
 
     for i in range(n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_test_[:, i], y_scores[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
-
-
     # Micro average
-    fpr["micro"], tpr["micro"], _ = roc_curve(y_test_.ravel(), y_scores.ravel())
+    y_ravel = y_test_.ravel()
+    score_ravel = y_scores.ravel()
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_ravel, score_ravel)
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
     # Macro average
@@ -42,29 +63,42 @@ def plot_roc_auc_curve(model: BaseEstimator, y_test_, X_test_) -> None:
     weighted_tpr = np.zeros_like(all_fpr)
     for i in range(n_classes):
         weighted_tpr += class_weights[i] * np.interp(all_fpr, fpr[i], tpr[i])
-        
+
     tpr["weighted"] = mean_tpr
     fpr["weighted"] = all_fpr
     roc_auc["weighted"] = auc(fpr["weighted"], tpr["weighted"])
 
     # # Plot ROC curve
-    plt.subplots(1, 1, figsize=(14, 6))  
+    plt.subplots(1, 1, figsize=(14, 6))
 
     for idx, w in zip(["*", "<", "1"], ["micro", "macro", "weighted"]):
-        plt.plot(fpr[w], tpr[w], label=f'{w}-average ROC curve (area = {roc_auc[w]:0.2f})', marker=idx, linewidth=1.5)
-        
-    for i in range(n_classes):
-        plt.plot(fpr[i], tpr[i], label=f'ROC curve of {get_output_label(i)} (area = {roc_auc[i]:0.2f}', linewidth=1.5)
+        plt.plot(
+            fpr[w],
+            tpr[w],
+            label=f"{w}-average ROC curve (area = {roc_auc[w]:0.2f})",
+            marker=idx,
+            linewidth=1.5,
+        )
 
-    plt.plot([0, 1], [0, 1], 'k--')
+    for i in range(n_classes):
+        label = get_output_label(encoding, i)
+        plt.plot(
+            fpr[i],
+            tpr[i],
+            label=f"ROC curve of {label} (area = {roc_auc[i]:0.2f}",
+            linewidth=1.5,
+        )
+
+    plt.plot([0, 1], [0, 1], "k--")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC-AUC Evaluation')
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC-AUC Evaluation")
     plt.legend(loc="lower right")
     plt.show()
-    
+
+
 if __name__ == "__main__":
     # Save plot
-    plot_roc_auc_curve(model, y_test_, X_test_)
+    plot_roc_auc_curve(model, y_test_, x_test_)

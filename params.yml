@@ -1,0 +1,9 @@
+data:
+  processed:
+    - covid19_tweets.csv
+  split:
+    - train.csv
+    - test.csv
+
+cross_valid_out:
+  - cross_valid_score.png
