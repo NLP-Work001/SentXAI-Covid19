@@ -14,8 +14,6 @@ if [[ ! -e "$file_name" ]]; then
 	exit
 fi
 
-echo "Fixing file '$file_name' errors."
-
 isort format "$file_name"
 ruff format "$file_name"
 

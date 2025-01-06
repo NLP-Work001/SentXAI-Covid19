@@ -6,4 +6,14 @@ data:
     - test.csv
 
 cross_valid:
-  model: rf
+  model: vote
+
+model_attrs:
+  file: model.pkl
+  tune_optimizer:
+    type: lr
+    n_split: 3
+    tuned_out: tuned_params
+
+  cross_valid:
+    type: vote # options -> ["vote", "lr", "bayes", "svm", "rf", "tree"]

@@ -16,11 +16,10 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
@@ -177,17 +176,20 @@ if __name__ == "__main__":
     models = {
         "bayes": MultinomialNB(),
         "svm": SVC(probability=True),
-        "knn": KNeighborsClassifier(),
-        "logistic": LogisticRegression(max_iter=100, random_state=seed),
+        "lr": LogisticRegression(max_iter=100, random_state=seed),
         "rf": RandomForestClassifier(random_state=seed),
         "tree": DecisionTreeClassifier(random_state=seed),
     }
 
-    print("Started cross validation ...")
+    # ToDo: check how roc_auc score are calculated for ensemble models
     model_type = parameters["cross_valid"]["model"]
-    model = models[model_type]
-    model_name = f"{model.__class__.__name__}".lower()
+    if model_type == "vote":
+        model = VotingClassifier(list(models.items()), voting="hard")
+    else:
+        model = models[model_type]
 
+    print("Started cross validation ...")
+    model_name = f"{model.__class__.__name__}".lower()
     scores_ = cross_validation_func(model, x_all_, y_all_)
 
     plot_output = Path(f"{args.out}/{model_name}") / file_out_name
@@ -196,8 +198,8 @@ if __name__ == "__main__":
     cross_valid_score_plot(scores_, plot_output)
     model_out = Path(plot_output.parent) / "model.pkl"
     joblib.dump(model, model_out)
-    # print("Process ended.")
-    # print("Parent path: ", plot_output.parent)
-    # print("File input path: ", file_path)
-    # print("Image file output name: ", file_out_name)
-    # print("Plot output file: ", plot_output)
+    print("Process ended.")
+    print("Parent path: ", plot_output.parent)
+    print("File input path: ", file_path)
+    print("Image file output name: ", file_out_name)
+    print("Plot output file: ", plot_output)

@@ -19,7 +19,7 @@ fi
 if [[ ! -d "$model_out" ]]; then
 	echo "Creating model outputs folder '$model_out'."
 	mkdir -p "$model_out"
-fi
+fi 
 
 echo "Running ${run_script} script ..."
 python "${run_script}" -o "${model_out}" -s "${split_dir}" -d "${date_time}"
