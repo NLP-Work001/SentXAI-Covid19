@@ -17,3 +17,8 @@ model_attrs:
 
   cross_valid:
     type: vote # options -> ["vote", "lr", "bayes", "svm", "rf", "tree"]
+
+training:
+  model: logisticregression
+  path_in: models/
+  path_out: evaluate/

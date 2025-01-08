@@ -29,14 +29,7 @@ from utils import (
 
 # Barplots for metric comparisons
 def cross_valid_score_plot(scores: dict, out_path: str, img_pixel=100) -> None:
-    """Helps to plot bar-graphs to visualize whether a model
-    is overfitting or underfitting. The y-axis represent the
-    metric scores and the x-axis represents respective selected
-    metric name.
 
-    params: scores in dictionary form.
-    returns: None
-    """
     filter_metric = [
         (
             (c.split("_")[0], "_".join(c.split("_")[1:]), k)

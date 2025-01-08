@@ -58,7 +58,8 @@ def load_train_split(file_name: str) -> pd.DataFrame:
     params: File path
     returns: pandas dataframe
     """
-    folder_dir = Path(os.path.abspath(".")) / "data/splits"
+    # ToDo: Modified the path code
+    folder_dir = Path(os.path.abspath(".")) / "data/split"
     file_path = os.path.join(folder_dir, file_name)
     df = pd.read_csv(file_path)
     return df
@@ -117,3 +118,48 @@ def date_time_record(date: str) -> str:
         execution_time.append("".join(str_list[idx].split(j)))
 
     return "_".join(execution_time)
+
+
+#  data cleaning & preprocessing
+# import re
+# import string
+# import nltk
+# import contractions
+# from nltk import word_tokenize, pos_tag
+# from nltk.corpus import stopwords
+# from nltk.stem.wordnet import WordNetLemmatizer
+
+# # Define Stopwords
+# covid_19_stopwords = ["covid", "coronavirus", "pandemic", "virus", "lockdown", "quarantine", "vaccine"]
+# custom_stopwords = covid_19_stopwords + stopwords.words()
+
+# # Lemmatizer
+# lemma = WordNetLemmatizer()
+
+# def preprocess_text(df: pd.DataFrame) -> pd.DataFrame:
+
+#     # Clean the text
+#     df['text'] = df['tweet'].str.lower()
+#     df['text'] = df['text'].apply(contractions.fix)
+#     df['text'] = df['text'].str.replace(r'https:\W.+','', regex=True)
+#     df['text'] = df['text'].str.replace(r'@\w+|&\w+','', regex=True)
+#     df['text'] = df['text'].str.replace(r'[%s]'%re.escape(string.punctuation),' ', regex=True)
+#     df['text'] = df['text'].str.replace(r'\d+\w+','', regex=True)
+
+#     # Tokenize and preprocess
+#     df['text'] = df['text'].apply(word_tokenize)
+#     df['text'] = df['text'].apply(lambda tokens: [lemma.lemmatize(word) for word in tokens])
+#     df['text'] = df['text'].str.join(" ")
+
+#     # Handle encoding and decoding issues
+#     df['text'] = df['text'].apply(lambda s: s.encode('ascii', 'ignore'))
+#     df['text'] = df['text'].apply(lambda s: s.decode('utf-8'))
+
+#     # Remove stopwords (and potentially filter short words)
+#     df['text'] = df['text'].apply(lambda text: [word for word in text.split() if word not in custom_stopwords and len(word) > 2])
+#     df['text'] = df['text'].str.join(" ")
+#     return df[['tweet', 'text', 'sentiment']]
+
+# # Processed DataSet
+# dataframe = preprocess_text(input_df)
+# print(dataframe)
