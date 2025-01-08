@@ -1,9 +1,3 @@
-"""This script helps to evaluate a trained model by plotting
-ROC and AUC curve. It consists of single function that calculates
-multiple false and true postive rates, in addition label or class
-averages are computed to find the best average for a selected model.
-"""
-
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt

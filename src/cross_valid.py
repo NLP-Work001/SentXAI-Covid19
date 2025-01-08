@@ -1,9 +1,3 @@
-"""The script is used to perform machine learning cross-validation.
-It consists of two functions, with the first serving us with metric
-comparison plot generation and the second function helping us to calcualte
-metrics and time lapsed during the entire cross validation process.
-"""
-
 import os
 import time
 from argparse import ArgumentParser

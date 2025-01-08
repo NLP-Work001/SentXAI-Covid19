@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Script usage: ./scripts/cv_tune_script.sh <python-script-name>
+
 usage() {
 	echo "USAGE: exactly one argument is needed i.e. method <arg>.py"
 	exit

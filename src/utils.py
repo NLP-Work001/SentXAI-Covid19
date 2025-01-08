@@ -1,5 +1,3 @@
-"""This script carries functions or methods across the project tree."""
-
 import os
 from pathlib import Path
 from typing import Union
@@ -98,7 +96,7 @@ def model_pipeline(
             ngram_range=vect_ngram_, norm=vect_norm_,
             preprocessor=word_processor
         )
-        
+
     ct = make_column_transformer((vect, "text"), remainder="drop")
     pipeline = make_pipeline(ct, baseline)
     return pipeline

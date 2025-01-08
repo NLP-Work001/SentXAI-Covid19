@@ -7,8 +7,8 @@ tune_params = {
         {
         "logisticregression__C": [round(c, 2) for c in np.linspace(0.01, 2, 4)],
         "logisticregression__solver": ["newton-cg", "sag", "saga", "lbfgs"],
-        "logisticregression__penalty": ["l2", None],
-        "logisticregression__max_iter": [c for c in range(100, 1000, 250)]
+        "logisticregression__penalty": ["l2"],
+        "logisticregression__max_iter": [c for c in range(1000, 2000, 250)]
         }
     ],
     "tree": {

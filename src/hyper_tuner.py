@@ -67,9 +67,10 @@ if __name__ == "__main__":
     train_in_ = parameter_["data"]["split"][0]
     file_in_ = Path(args.split) / train_in_
 
-    data = pd.read_csv(file_in_)
+    nrows = 2000 # ToDo: delete after testing
+    data = pd.read_csv(file_in_).head(nrows)
     x_all_ = data[["text"]]
-    y_all_ = data[["sentiment"]]
+    y_all_ = data["sentiment"]
 
     # Model params
     model_attrs_ = parameter_["model_attrs"]
@@ -102,4 +103,4 @@ if __name__ == "__main__":
     model = joblib.load(pickle_file_in_)
     num_split_ = model_attrs_["tune_optimizer"]["n_split"]
     tune_results = hyper_optimizer(model, pipe_params_, x_all_, y_all_, num_split_)
-    tune_results.to_csv(tuning_out_)
+    tune_results.to_csv(tuning_out_, index=False)
