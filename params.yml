@@ -1,24 +1,37 @@
+project: Covid-19 tweets Classification (NLP)
 data:
+  clean:
+    path: data/raw/covid-19-tweets
+
   processed:
-    - covid19_tweets.csv
+    path: data/processed
+    file: processed_tweets.csv
+
+  analysis:
+    path: analytics/
+
   split:
-    - train.csv
-    - test.csv
+    path: data/split
+    ratio: 0.2
+    seed: 43
+    file:
+      - train.csv
+      - test.csv
 
-cross_valid:
-  model: vote
-
-model_attrs:
+dev:
+  path: models/
   file: model.pkl
-  tune_optimizer:
-    type: lr
+  train:
+    path: train
+    name: logistic
+
+  cross-valid:
+    model: logistic
+    n_split: 5
+    path: cross_val/
+    file: model.pkl
+
+  fine-tune:
+    model: logistic
     n_split: 3
-    tuned_out: tuned_params
-
-  cross_valid:
-    type: vote # options -> ["vote", "lr", "bayes", "svm", "rf", "tree"]
-
-training:
-  model: logisticregression
-  path_in: models/
-  path_out: evaluate/
+    path: tuned/

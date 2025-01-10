@@ -10,15 +10,14 @@ from sklearn.compose import make_column_transformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.pipeline import make_pipeline
-
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import MultinomialNB
 
 # TFIDf token function
 def word_processor(doc: str):
-    """Used for tfidf tokenizer and
-    preprocessor.
-    param: doc -> string
-    returns: single word
-    """
     return doc
 
 
@@ -26,9 +25,7 @@ def word_processor(doc: str):
 def calculate_metric_score(
     model: BaseEstimator, x_values: pd.DataFrame, y_true: list
 ) -> dict:
-    """Computes trained model metric scores.
-    returns: calculated scores as a dictionary.
-    """
+    
     f1 = f1_score(y_true, model.predict(x_values), average="weighted")
     roc_auc = roc_auc_score(
         y_true, model.predict_proba(x_values), average="weighted", multi_class="ovo"
@@ -38,36 +35,27 @@ def calculate_metric_score(
     return metrics
 
 
-def calculate_average_cv(metrics: list, alias="train") -> dict:
-    """Calculates the average cross-validation scores.
-    params: metrics - list of cv metrics
-    returns: average cv scores
-    """
+def cross_valid_mean_score(metrics: list, alias="train") -> dict:
+
     keys = list(next(iter(metrics)))
     values = [list(score.values()) for score in metrics]
     score_avg = np.mean(values, axis=0)
-    cv_metrics = {f"{alias}_{n}": np.round(v, 2) for n, v in zip(keys, score_avg)}
-    cv_scores = {f"{alias}_avg": np.round(np.mean(score_avg), 2), **cv_metrics}
+    metric_scores = {f"{alias}_{n}": np.round(v, 2) for n, v in zip(keys, score_avg)}
 
-    return cv_scores
+    return metric_scores
 
 
 # Load train/test split data
 def load_train_split(file_name: str) -> pd.DataFrame:
-    """Load train/test dataset from splits folder.
-    params: File path
-    returns: pandas dataframe
-    """
+    
     # ToDo: Modified the path code
     folder_dir = Path(os.path.abspath(".")) / "data/split"
     file_path = os.path.join(folder_dir, file_name)
     df = pd.read_csv(file_path)
     return df
 
-
 # Convert numerical labels into named labels
 def get_output_label(encoding, index, size=3) -> str:
-    """Used for retrieving original label name."""
     try:
         if index >= size:
             raise ValueError("Index must be less than number of classes.")
@@ -87,9 +75,6 @@ def get_output_label(encoding, index, size=3) -> str:
 def model_pipeline(
     baseline: BaseEstimator, vect_ngram_: Union[tuple, list] = (1, 1), vect_norm_="l2"
 ):
-    """This is the model pipeline in scikit-learn library.
-    returns: pipeline ready for training
-    """
     if isinstance(vect_ngram_, list) and vect_norm_ is None:
         vect = TfidfVectorizer(preprocessor=word_processor)
     else:
@@ -101,6 +86,17 @@ def model_pipeline(
     ct = make_column_transformer((vect, "text"), remainder="drop")
     pipeline = make_pipeline(ct, baseline)
     return pipeline
+
+# Select model for cross-val or fine-tuning
+def select_model(model: str, seed=0) -> BaseEstimator:
+    models = {
+        "bayes": MultinomialNB(),
+        "svc": SVC(probability=True),
+        "logistic": LogisticRegression(random_state=seed),
+        "rforest": RandomForestClassifier(random_state=seed),
+        "tree": DecisionTreeClassifier(random_state=seed),
+    }
+    return models[model]
 
 
 # Read Script parameters
@@ -119,47 +115,3 @@ def date_time_record(date: str) -> str:
 
     return "_".join(execution_time)
 
-
-#  data cleaning & preprocessing
-# import re
-# import string
-# import nltk
-# import contractions
-# from nltk import word_tokenize, pos_tag
-# from nltk.corpus import stopwords
-# from nltk.stem.wordnet import WordNetLemmatizer
-
-# # Define Stopwords
-# covid_19_stopwords = ["covid", "coronavirus", "pandemic", "virus", "lockdown", "quarantine", "vaccine"]
-# custom_stopwords = covid_19_stopwords + stopwords.words()
-
-# # Lemmatizer
-# lemma = WordNetLemmatizer()
-
-# def preprocess_text(df: pd.DataFrame) -> pd.DataFrame:
-
-#     # Clean the text
-#     df['text'] = df['tweet'].str.lower()
-#     df['text'] = df['text'].apply(contractions.fix)
-#     df['text'] = df['text'].str.replace(r'https:\W.+','', regex=True)
-#     df['text'] = df['text'].str.replace(r'@\w+|&\w+','', regex=True)
-#     df['text'] = df['text'].str.replace(r'[%s]'%re.escape(string.punctuation),' ', regex=True)
-#     df['text'] = df['text'].str.replace(r'\d+\w+','', regex=True)
-
-#     # Tokenize and preprocess
-#     df['text'] = df['text'].apply(word_tokenize)
-#     df['text'] = df['text'].apply(lambda tokens: [lemma.lemmatize(word) for word in tokens])
-#     df['text'] = df['text'].str.join(" ")
-
-#     # Handle encoding and decoding issues
-#     df['text'] = df['text'].apply(lambda s: s.encode('ascii', 'ignore'))
-#     df['text'] = df['text'].apply(lambda s: s.decode('utf-8'))
-
-#     # Remove stopwords (and potentially filter short words)
-#     df['text'] = df['text'].apply(lambda text: [word for word in text.split() if word not in custom_stopwords and len(word) > 2])
-#     df['text'] = df['text'].str.join(" ")
-#     return df[['tweet', 'text', 'sentiment']]
-
-# # Processed DataSet
-# dataframe = preprocess_text(input_df)
-# print(dataframe)

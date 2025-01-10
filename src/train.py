@@ -34,10 +34,9 @@ def __optimized_params_loader(path: str) -> dict:
 
 
 def __training(baseline_model: BaseEstimator, vector_params: dict, out_: str) -> None:
-    # ToDo: Remove nrows after testing
     # Load training & testing dataset
-    _train = load_train_split("train.csv").head(3000)
-    _test = load_train_split("test.csv").head(1000)
+    _train = load_train_split("train.csv")
+    _test = load_train_split("test.csv")
     print("train shape: ", _train.shape)
     print("test shape: ", _test.shape)
 

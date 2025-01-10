@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
-
+import os
 import joblib
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -17,10 +17,11 @@ def hyper_optimizer(
     pipeline_params: list,
     x: pd.DataFrame,
     y: pd.DataFrame,
-    num_split=3,
+    num_split: float,
+    seed: int
 ) -> pd.DataFrame:
     # Define KFlod
-    cv = StratifiedKFold(n_splits=num_split, shuffle=True, random_state=43)
+    cv = StratifiedKFold(n_splits=num_split, random_state=seed, shuffle=True)
 
     # Label Encoding
     label_encoding = LabelEncoder()
@@ -52,55 +53,58 @@ def hyper_optimizer(
 
 
 if __name__ == "__main__":
-    # CLI Arguments
+    print("Started hyper-param tuning ...")
+    params_loader = load_parameters("params.yml")
+
+    # Reading data file
+    parent_ = params_loader["data"]
+    path_in_ = parent_["split"]["path"]
+    train_in_ = Path(path_in_) / parent_["split"]["file"][0]
+    
+    # Fine-Tuned utils
+    dev = params_loader["dev"]
+    dev_path = dev["path"]
+    cross_val_path = dev["cross-valid"]["path"] # arg1 in a function
+    tune = dev["fine-tune"] # arg2 in a function
+    tune_path_ = tune["path"]
+    tune_model = tune["model"]
+    
+    cv_path_in_ = Path(f"{dev_path}/{cross_val_path}/{tune_model}")
+    tune_path_out_ = Path(f"{dev_path}/{tune_path_}/{tune_model}")
+    os.makedirs(tune_path_out_, exist_ok=True)
+    # command-Line arguments
     parser = ArgumentParser()
-    parser.add_argument("-s", "--split", help="data/split directory.")
     parser.add_argument(
-        "-d", "--date", help="retrieves datetime during script execution."
+        "-d", "--date", help="Recorded date during runtime execution."
     )
-    parser.add_argument("-o", "--out", help="contains model output path.")
-
+    
     args = parser.parse_args()
-
-    # Reading training data
-    parameter_ = load_parameters("params.yml")
-    train_in_ = parameter_["data"]["split"][0]
-    file_in_ = Path(args.split) / train_in_
-
-    nrows = 2000 # ToDo: delete after testing
-    data = pd.read_csv(file_in_).head(nrows)
-    x_all_ = data[["text"]]
-    y_all_ = data["sentiment"]
-
-    # Model params
-    model_attrs_ = parameter_["model_attrs"]
-    model_type_ = model_attrs_["tune_optimizer"]["type"]
-    model_name_ = tune_params[model_type_][0]
-    path_out_ = f"{args.out}/{model_name_}"
-    model_param_ = tune_params[model_type_][1]
-
+    
+    date_time = date_time_record(args.date)
+    file_out_ = f"optimized_params_{date_time}.csv"
+    tune_file_out_ = Path(tune_path_out_) / file_out_
+    # Load training dataset
+    dataframe = pd.read_csv(train_in_)
+    x_all_ = dataframe[["text"]]
+    y_all_ = dataframe["sentiment"]
+    
+    # Initiate hyer-tuner optimization
+    num_split_ = tune["n_split"]
+    seed_ = parent_["split"]["seed"]
+    pickle_in_ = Path(cv_path_in_) / dev["file"]
+    model = joblib.load(pickle_in_)
+    model_param_ = tune_params[tune_model]
     pipe_params_ = [vector_params, model_param_]
-    print("starting optimizing ..")
-
-    # Run model optimizer
-    pickle_file_ = model_attrs_["file"]
-    tuned_out_ = model_attrs_["tune_optimizer"]["tuned_out"]
-    date_time_ = date_time_record(args.date)
-    file_name_out_ = tuned_out_ + "_" + date_time_ + ".csv"
-
-    pickle_file_in_ = Path(path_out_) / pickle_file_
-    tuning_out_ = Path(path_out_) / file_name_out_
-
-    # print("Train Input File", train_in_)
-    # print("File Input:, ", file_in_)
-    # print("Model name: ", model_name_)
-    # print("Path output: ", path_out_)
-    print("Pickle File: ", pickle_file_)
-    print("Pipeline params: ", pipe_params_)
-    print("Pickle file path: ", pickle_file_in_)
-    print("Tunining output path: ", tuning_out_)
-
-    model = joblib.load(pickle_file_in_)
-    num_split_ = model_attrs_["tune_optimizer"]["n_split"]
-    tune_results = hyper_optimizer(model, pipe_params_, x_all_, y_all_, num_split_)
-    tune_results.to_csv(tuning_out_, index=False)
+    
+    tune_results = hyper_optimizer(model, pipe_params_, x_all_, y_all_, num_split_, seed_)
+    tune_results.to_csv(tune_file_out_, index=False)
+    
+    # print(seed_)
+    # print(num_split_)
+    # print(train_in_)
+    # print(model.__class__.__name__)
+    # print(tune_path_out_)
+    # print(tune_file_out_)
+    # print(pickle_in_)
+    # print(pipe_params_)
+    

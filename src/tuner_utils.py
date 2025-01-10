@@ -2,15 +2,13 @@ import numpy as np
 
 # Tuning params
 tune_params = {
-    "lr": [
-        "logisticregression",
+    "logistic": 
         {
         "logisticregression__C": [round(c, 2) for c in np.linspace(0.01, 2, 4)],
         "logisticregression__solver": ["newton-cg", "sag", "saga", "lbfgs"],
         "logisticregression__penalty": ["l2"],
         "logisticregression__max_iter": [c for c in range(1000, 2000, 250)]
-        }
-    ],
+        },
     "tree": {
         "decisiontreeclassifier__criterion": ["gini", "entropy", "log_loss"],
         "decisiontreeclassifier__max_depth": [10, 50, 100, 500, 1000],
@@ -26,7 +24,7 @@ __ngram_ranges = [
     for j in range(1, MAX_NGRAM_ + 1)
     if i <= j
 ]
-vector_params= {
+vector_params = {
     "columntransformer__tfidfvectorizer__ngram_range": __ngram_ranges,
     "columntransformer__tfidfvectorizer__norm": ["l1", "l2"],
 }

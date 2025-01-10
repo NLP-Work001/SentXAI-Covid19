@@ -1,54 +1,176 @@
 #!/usr/bin/env bash
 
 # Constant variables
-declare -r path="models/logisticregression"
+folder="logistic"
+declare -r path="models/tuned/$folder"
 declare -r json_output="${path}/best_params.json"
-declare -r log_file="${path}/best_param_scores_.txt"
+
+find_params_score(){
+  local filter_values=('columntransformer__tfidfvectorizer__' 'logisticregression__')
+  best_params_=()
+  for name in "${filter_values[@]}"; do
+    best_params_+=("$(grep "$name" "$1" | sed "s/$name//g" | sed "s/\"//g" | head -1)")
+  done
+
+  pattern="np\.*[a-z]*[0-9].?\(|\)"
+  best_params_[0]=$(echo ${best_params_[0]} | grep "ngram_range" | sed  -E "s/\(/\[/g" | sed  -E "s/\)/\]/g")
+  best_params_[1]=$(echo ${best_params_[1]} | grep -v "ngram_range" | sed  -E "s/$pattern//g")
+
+  new_arr=()
+  scores=()
+  for c in $(seq 0 1); do
+    value1=$(echo "${best_params_[$c]}" | grep -o "},.*" | cut -d, -f2)
+    value2=$(echo "${best_params_[$c]}" | grep -o "},.*" | cut -d, -f3)
+    params=$(echo "${best_params_[$c]}" | grep -o ".*}")
+    scores+=($value1 $value2)
+    new_arr[$c]=$(echo "{\"params\": $params, \"f1_weighted\": $value1, \"roc_auc_ovo\": $value2}" | sed "s/'/\"/g")
+  done
+
+  new_arr[0]="{\"vectorizer\": ${new_arr[0]}, "
+  new_arr[1]="\"model\": ${new_arr[1]}}"
+
+  sum=0
+  count=${#scores[@]}
+  for c in ${scores[@]}; do
+    sum=$(echo "$c + $sum" | bc)
+  done
+  avg_score=$(echo  "scale=2; $sum / $count " | bc)
+
+  echo "score: ${avg_score}"
+  echo  "${new_arr[@]}"
+}
+
 
 # Find the latest optimized parameters file
-file_name=$(find "$path" -name "*.csv" | sort -t_ -k3,3 -k4,4 -r | head -1)
+readarray -t files < <(find "$path" -maxdepth 1 -name "*.csv")
 
-# Filter and process parameter values
-filter_values=('columntransformer__tfidfvectorizer__' 'logisticregression__')
+if [[ ${#files[@]} -eq 1 ]]; then
 
-> "$log_file"
-for name in "${filter_values[@]}"; do
-  grep "$name" "$file_name" | head -1 | sed "s/$name//g" | sed "s/\"//g" >> "$log_file"
-done
+  echo "Existing files: ${#files[@]}."
 
-# Extract formatted output form python script and overrride `log_file`
-py_out=$(python src/re_filter.py "$path")
-echo "$py_out" > $log_file
-# echo $py_out
-# Extract values for JSON output
-readarray -t params < <(grep -o ".*}" "$log_file" | sed "s/'/\"/g" | sed "s/(/[/g" | sed "s/)/]/g")
-readarray -t metrics < <(grep -o "},.*" "$log_file" | cut -d, -f2,3)
-# echo "${params[@]}"
+  params_=$(find_params_score ${files[0]} | grep -v "score:")
+  # echo $params_
+  new_file=$(echo "${files[0]}" | cut -d/ -f4)
+  echo ${params_[@]} | python -m json.tool > $json_output
+  echo $new_file > "${path}/log.txt"
 
-vect_params="${params[0]}"
-model_params="${params[1]}"
-vectorizer_f1=$(echo "${metrics[0]}" | cut -d, -f1)
-vectorizer_roc_auc=$(echo "${metrics[0]}" | cut -d, -f2)
-model_f1=$(echo "${metrics[1]}" | cut -d, -f1)
-model_roc_auc=$(echo "${metrics[1]}" | cut -d, -f2)
+elif [[ ${#files[@]} -gt 1 ]]; then
 
-# JSON File
-cat << EOF > "$json_output"
-[{
-  "vectorizer": {
-    "params": $vect_params,
-    "roc_auc_ovo": $vectorizer_roc_auc,
-    "f1_weighted": $vectorizer_f1
-  },
-  "model": {
-    "params": $model_params,
-    "roc_auc_ovo": $model_roc_auc,
-    "f1_weighted": $model_f1
-  }
-}]
-EOF
+  echo "Existing files: ${#files[@]}."
 
-# cat $json_output
+  match_latest_file=$(find "$path" -maxdepth 1 -name "*.csv" | grep -E -o "[0-9].*" | sort -r | head -1)
+  latest_file=$(find "$path" -maxdepth 1 -name "*$match_latest_file*" | cut -d/ -f4)
+  date_time=$(echo $latest_file | cut -d_ -f3-4 | cut -d\. -f1)
 
-# Folder clean-up
-rm -rf "$log_file"
+  old_file=$(cat "${path}/log.txt")
+
+  old_score=$(find_params_score "$path/$old_file" | grep -E "score:" | cut -d: -f2)
+  new_score=$(find_params_score "$path/$latest_file" | grep -E "score:" | cut -d: -f2)
+
+  old_params_=$(find_params_score "$path/$old_file" | grep -v "score:")
+  new_params_=$(find_params_score "$path/$latest_file" | grep -v "score:")
+
+  echo "Old score: $old_score, New_score: $new_score"
+
+  if (( $(echo "$new_score > $old_score" | bc -l ) )); then
+    echo "Update log file."
+    echo ${new_params_[@]} | python -m json.tool > $json_output
+    echo $latest_file > "${path}/log.txt"
+
+  elif (( $(echo "$new_score <= $old_score" | bc -l ) )); then
+    echo "Exit the process and keep old score."
+    exit
+  fi
+
+else
+  echo "There are not existing *.csv files."
+  exit
+fi
+# #!/usr/bin/env bash
+#
+# # Constant variables
+# folder="logistic"
+# declare -r path="models/tuned/$folder"
+# declare -r json_output="${path}/best_params.json"
+#
+# find_params_score(){
+#   local filter_values=('columntransformer__tfidfvectorizer__' 'logisticregression__')
+#   best_params_=()
+#   for name in "${filter_values[@]}"; do
+#     best_params_+=("$(grep "$name" "$1" | sed "s/$name//g" | sed "s/\"//g" | head -1)")
+#   done
+#
+#   pattern="np\.*[a-z]*[0-9].?\(|\)"
+#   best_params_[0]=$(echo ${best_params_[0]} | grep "ngram_range" | sed  -E "s/\(/\[/g" | sed  -E "s/\)/\]/g")
+#   best_params_[1]=$(echo ${best_params_[1]} | grep -v "ngram_range" | sed  -E "s/$pattern//g")
+#
+#   new_arr=()
+#   scores=()
+#   for c in $(seq 0 1); do
+#     value1=$(echo "${best_params_[$c]}" | grep -o "},.*" | cut -d, -f2)
+#     value2=$(echo "${best_params_[$c]}" | grep -o "},.*" | cut -d, -f3)
+#     params=$(echo "${best_params_[$c]}" | grep -o ".*}")
+#     scores+=($value1 $value2)
+#     new_arr[$c]=$(echo "{\"params\": $params, \"f1_weighted\": $value1, \"roc_auc_ovo\": $value2}" | sed "s/'/\"/g")
+#   done
+#
+#   new_arr[0]="{\"vectorizer\": ${new_arr[0]}, "
+#   new_arr[1]="\"model\": ${new_arr[1]}}"
+#
+#   sum=0
+#   count=${#scores[@]}
+#   for c in ${scores[@]}; do
+#     sum=$(echo "$c + $sum" | bc)
+#   done
+#   avg_score=$(echo  "scale=2; $sum / $count " | bc)
+#
+#   echo "score: ${avg_score}"
+#   echo  "${new_arr[@]}"
+# }
+#
+#
+# # Find the latest optimized parameters file
+# readarray -t files < <(find "$path" -maxdepth 1 -name "*.csv")
+#
+# if [[ ${#files[@]} -eq 1 ]]; then
+#
+#   echo "Existing files: ${#files[@]}."
+#
+#   params_=$(find_params_score ${files[0]} | grep -v "score:")
+#   # echo $params_
+#   new_file=$(echo "${files[0]}" | cut -d/ -f4)
+#   echo ${params_[@]} | python -m json.tool > $json_output
+#   echo $new_file > "${path}/log.txt"
+#
+# elif [[ ${#files[@]} -gt 1 ]]; then
+#
+#   echo "Existing files: ${#files[@]}."
+#
+#   match_latest_file=$(find "$path" -maxdepth 1 -name "*.csv" | grep -E -o "[0-9].*" | sort -r | head -1)
+#   latest_file=$(find "$path" -maxdepth 1 -name "*$match_latest_file*" | cut -d/ -f4)
+#   date_time=$(echo $latest_file | cut -d_ -f3-4 | cut -d\. -f1)
+#
+#   old_file=$(cat "${path}/log.txt")
+#
+#   old_score=$(find_params_score "$path/$old_file" | grep -E "score:" | cut -d: -f2)
+#   new_score=$(find_params_score "$path/$latest_file" | grep -E "score:" | cut -d: -f2)
+#
+#   old_params_=$(find_params_score "$path/$old_file" | grep -v "score:")
+#   new_params_=$(find_params_score "$path/$latest_file" | grep -v "score:")
+#
+#   echo "Old score: $old_score, new_score: $new_score"
+#
+#   if (( $(echo "$new_score > $old_score" | bc -l ) )); then
+#     echo "Update log file."
+#     echo ${new_params_[@]} | python -m json.tool > $json_output
+#     echo $latest_file > "${path}/log.txt"
+#
+#   elif (( $(echo "$new_score <= $old_score" | bc -l ) )); then
+#     echo "Exit the process and keep old score."
+#     exit
+#   fi
+#
+# else
+#   echo "There are not existing *.csv files."
+#   exit
+# fi

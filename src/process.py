@@ -1,104 +1,50 @@
-import os
 import re
 import string
 import warnings
 from pathlib import Path
-
+import os
 import contractions
-import kagglehub
-import matplotlib.pyplot as plt
 import nltk
-import numpy as np
 import pandas as pd
-import seaborn as sns
-from nltk import pos_tag, word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem.wordnet import WordNetLemmatizer
+from nltk import word_tokenize
+from nltk.corpus import stopwords, wordnet
+from nltk.stem import WordNetLemmatizer
+
+from utils import load_parameters
 
 warnings.filterwarnings("ignore")
 
-# Download NLTK resources
-nltk.download("popular", quiet=True)
-nltk.download("punkt_tab", quiet=True)
-nltk.download("averaged_perceptron_tagger_eng", quiet=True)
+# # Download NLTK resources
+# nltk.download("popular", quiet=True)
+# nltk.download("punkt_tab", quiet=True)
+# nltk.download("averaged_perceptron_tagger_eng", quiet=True)
 
 
-# "https://www.kaggle.com/datasets/datatattle/covid-19-nlp-text-classification/df"
-def download_dataset(URL: str) -> pd.DataFrame:
-    training_path = Path(f"{URL}/Corona_NLP_train.csv")
-    testing_path = Path(f"{URL}/Corona_NLP_test.csv")
+# Loading data method
+def __reading_file(folder: str) -> pd.DataFrame:
+    data = pd.DataFrame()
+    for path in list(folder.glob("*.csv")):
+        data = pd.read_csv(path, encoding="latin1")
+        data = (
+            pd.concat([data, data], axis=0)
+            .sample(frac=1, random_state=43)
+            .reset_index(drop=True)
+        )
 
-    train_df = pd.read_csv(training_path, encoding="latin1")
-    test_df = pd.read_csv(testing_path, encoding="latin1")
-
-    return pd.concat([train_df, test_df], axis=0)
-
-
-# Download and load the dataset
-URL = kagglehub.dataset_download("datatattle/covid-19-nlp-text-classification")
-df = download_dataset(URL)
-
-# Preprocess the df
-df = df.rename(columns=str.lower)
-df = df[["originaltweet", "sentiment"]]
-df = df.rename(columns={"originaltweet": "tweet"})
-df = df.astype(str)
-
-for c in df.columns:
-    df[c] = df[c].str.lower()
-
-df = df.sample(frac=1, random_state=43).reset_index(drop=True)
-
-
-# Plot sentiment distributions
-def plot_sentiment_dist(df: pd.DataFrame, palette="colorblind") -> None:
-    sentiment_df = df["sentiment"].value_counts().reset_index(name="size")
-
-    _, ax = plt.subplots(figsize=(10, 4))
-    plt.style.use("ggplot")
-
-    sns.barplot(
-        sentiment_df,
-        x="sentiment",
-        y="size",
-        hue="sentiment",
-        palette=palette,
-        gap=0.5,
-        ax=ax,
-    )
-
-    # Axis Labels and Title
-    ax.set_title("Consolidated Sentiment Distribution", fontsize=12, alpha=0.8)
-    ax.set_ylabel("Count", fontsize=12)
-    ax.set_xlabel("")
-    plt.xticks(rotation=45)
-
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-
-    plt.tight_layout()
-    plt.show()
-
-
-# All sentiments included
-# plot_sentiment_dist(df)
-
+    return data
 
 # Consolidate negative and postive sentiments
-def consolidate_sentiment(sentiment: str) -> str:
+def __consolidate_sentiment(sentiment: str) -> str:
     if sentiment == "extremely positive":
         return "positive"
+
     elif sentiment == "extremely negative":
         return "negative"
-    return sentiment
-
-
-df["sentiment"] = df["sentiment"].apply(consolidate_sentiment)
-
-# consolidated
-# plot_sentiment_dist(df, "viridis")
+    else:
+        return sentiment
 
 # Define Stopwords
-covid_19_stopwords = [
+__covid_19_stopwords = [
     "covid",
     "coronavirus",
     "pandemic",
@@ -107,61 +53,115 @@ covid_19_stopwords = [
     "quarantine",
     "vaccine",
 ]
-custom_stopwords = covid_19_stopwords + stopwords.words()
+__custom_stopwords = __covid_19_stopwords + stopwords.words()
 
 # Lemmatizer
-lemma = WordNetLemmatizer()
+__lemma = WordNetLemmatizer()
 
 
-def preprocess_text(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
+def get_part_of_speech(tag):
+    if tag.startswith("J"):
+        return wordnet.ADJ
+    
+    elif tag.startswith("V"):
+        return wordnet.VERB
+    
+    elif tag.startswith("N"):
+        return wordnet.NOUN
+    
+    elif tag.startswith("R"):
+        return wordnet.ADV
+    
+    else:
+        return wordnet.NOUN
 
+
+def sentence_lemmatizer(sentence: str) -> str:
+    tokens = word_tokenize(sentence)
+    pos_tags = nltk.pos_tag(tokens)
+    word_lemma = [
+        __lemma.lemmatize(word, get_part_of_speech(tag)) for word, tag in pos_tags
+    ]
+    return " ".join(word_lemma)
+
+
+def __text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
     # Clean the text
-    df["text"] = df["tweet"].str.lower()
-    df["text"] = df["text"].apply(contractions.fix)
-    df["text"] = df["text"].str.replace(r"https:\W.+", "", regex=True)
-    df["text"] = df["text"].str.replace(r"@\w+|&\w+", "", regex=True)
-    df["text"] = df["text"].str.replace(
-        r"[%s]" % re.escape(string.punctuation), " ", regex=True
+    data["text"] = data["tweet"].str.lower()
+    data["text"] = data["text"].apply(contractions.fix)
+    data["text"] = data["text"].str.replace(r"https:\W.+", "", regex=True)
+    data["text"] = data["text"].str.replace(r"@\w+|&\w+", "", regex=True)
+    data["text"] = data["text"].str.replace(
+        f"[{re.escape(string.punctuation)}]", " ", regex=True
     )
-    df["text"] = df["text"].str.replace(r"\d+\w+", "", regex=True)
+    data["text"] = data["text"].str.replace(r"\d+\w+", "", regex=True)
 
-    # Tokenize and preprocess
-    df["text"] = df["text"].apply(word_tokenize)
-    df["text"] = df["text"].apply(
-        lambda tokens: [lemma.lemmatize(word) for word in tokens]
-    )
-    df["text"] = df["text"].str.join(" ")
+    # Sentence lemmatization
+    data["text"] = data["text"].apply(sentence_lemmatizer)
 
     # Handle encoding and decoding issues
-    df["text"] = df["text"].apply(lambda s: s.encode("ascii", "ignore"))
-    df["text"] = df["text"].apply(lambda s: s.decode("utf-8"))
+    data["text"] = data["text"].apply(lambda s: s.encode("ascii", "ignore"))
+    data["text"] = data["text"].apply(lambda s: s.decode("utf-8"))
 
     # Remove stopwords (and potentially filter short words)
-    df["text"] = df["text"].apply(
+    data["text"] = data["text"].apply(
         lambda text: [
             word
             for word in text.split()
-            if word not in custom_stopwords and len(word) > 2
+            if word not in __custom_stopwords and len(word) > 2
         ]
     )
-    df["text"] = df["text"].str.join(" ")
-    return df[["tweet", "text", "sentiment"]]
+    data["text"] = data["text"].str.join(" ")
+    return data[["tweet", "text", "sentiment"]]
 
 
-# Processed DataSet
-dataframe = preprocess_text(df)
-dataframe = (
-    dataframe[~(dataframe.text.str.split().apply(lambda s: len(s)) < 2)]
-    .dropna()
-    .drop_duplicates()
-    .reset_index(drop=True)
-)
+def __preprocessing(path: str) -> pd.DataFrame:
+    # Loading complete data file
+    # ToDo: remove head for full data processing
+    data = __reading_file(path).head(5000)
+
+    # Preprocess pandas data
+    data = data.rename(columns=str.lower)
+    data = data[["originaltweet", "sentiment"]]
+    data = data.rename(columns={"originaltweet": "tweet"})
+    data = data.astype(str)
+
+    # Lowercasing column names
+    for c in data.columns:
+        data[c] = data[c].str.lower()
+
+    # Reduce label output into three labels i.e. neutral, negative and positive
+    data["sentiment"] = data["sentiment"].apply(__consolidate_sentiment)
+
+    # Cleaning and preprocessing tweets/text
+    dataframe = __text_preprocessing(data)
+    dataframe = (
+        dataframe[~(dataframe.text.str.split().apply(lambda s: len(s)) < 2)]
+        .dropna()
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
+
+    return dataframe
 
 
 if __name__ == "__main__":
-    # Naming file output
-    FILE_NAME = "covid19_tweets.csv"
-    FILE_OUTPUT = os.path.join("df/processed", FILE_NAME)
+    print("Started preprocessing ...")
+    # Processed DataSet
+    params_loader = load_parameters("params.yml")
+    
+    parent_ = params_loader["data"]
+    path_in_ = Path(parent_["clean"]["path"])
+    
+    path_out_ = parent_["processed"]["path"]
+    os.makedirs(path_out_, exist_ok=True)
+    
+    file_out_ = Path(path_out_) / parent_["processed"]["file"]
 
-    dataframe.to_csv(FILE_OUTPUT, index=False)
+    print(list(path_in_.glob("*.csv")))
+    print(file_out_)
+    
+    # df = __preprocessing(path_in_)
+    # df.to_csv(file_out_, index=False)
+    
+    # print("Process completed!")

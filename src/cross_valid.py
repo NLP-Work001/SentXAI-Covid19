@@ -1,5 +1,6 @@
 import os
 import time
+import json
 from argparse import ArgumentParser
 from datetime import timedelta
 from pathlib import Path
@@ -10,53 +11,51 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import LabelEncoder
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
 
 from utils import (
-    calculate_average_cv,
+    cross_valid_mean_score,
     calculate_metric_score,
-    load_parameters,
-    model_pipeline,
+    load_parameters, model_pipeline,
+    date_time_record,
+    select_model
 )
 
 
 # Barplots for metric comparisons
-def cross_valid_score_plot(scores: dict, out_path: str, img_pixel=100) -> None:
-
-    filter_metric = [
-        (
-            (c.split("_")[0], "_".join(c.split("_")[1:]), k)
-            if len(c.split("_")) > 2
-            else (*c.split("_"), k)
-        )
-        for c, k in scores.items()
-        if "time" not in c
-    ]
-
-    cols = ["cv_fold", "metric", "score"]
+def plot_cross_valid_score(scores: dict, out_path: str, img_pixel=100) -> None:
+    
+    filter_metric = []
+    for c, k in scores.items():
+        c_split = c.split("_")
+        if "time" in c:
+            continue
+        
+        if len(c_split) > 2:
+            values = (c_split[0], "_".join(c_split[1:]), k)
+        else:
+            values = (*c_split, k)
+            
+        filter_metric.append(values)
+        
+    cols = ["fold", "metric", "score"]
     metric_df = pd.DataFrame(filter_metric, columns=cols).sort_values(
         "metric", ascending=False
     )
 
     # Seaborn plot
+    plt.style.use("ggplot")
     fig, ax = plt.subplots(figsize=(10, 4))
-    # plt.style.use("ggplot")
-    sns.set_theme()
-
+    
     sns.barplot(
         metric_df,
         x="metric",
         y="score",
         ax=ax,
         width=0.5,
-        hue="cv_fold",
+        hue="fold",
         palette="colorblind",
     )
     # Axis Labels and Title
@@ -70,27 +69,19 @@ def cross_valid_score_plot(scores: dict, out_path: str, img_pixel=100) -> None:
     plt.tight_layout()
     fig.savefig(out_path, dpi=img_pixel)
 
-    print(f"Image file saved into {out_path}")
 
-
-def cross_validation_func(
-    baseline: BaseEstimator, x: pd.DataFrame, y: pd.DataFrame
+def cross_valid_iteration(
+    baseline: BaseEstimator, x: pd.DataFrame, y: pd.DataFrame,
+    num_split: int, seed: float
 ) -> dict:
-    """Helps to easily perform model cross validation.
 
-    param: baseline -> selected model to validate
-    param: x -> pandas dataframe
-    param: y -> pandas dataframe
-
-    returns: both training and validation score metrics
-    """
     pipe = model_pipeline(baseline)
 
     label_encoding = LabelEncoder()
     y_all = label_encoding.fit_transform(y)
 
     # Cross-Validation
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=43)
+    cv = StratifiedKFold(n_splits=num_split, shuffle=True, random_state=seed)
 
     train_scores = []
     val_scores = []
@@ -116,77 +107,72 @@ def cross_validation_func(
     total_time = str(timedelta(seconds=seconds))
 
     # Cross-validated metric scores
-    training_score = calculate_average_cv(train_scores)
-    validation_score = calculate_average_cv(val_scores, "val")
+    training_score = cross_valid_mean_score(train_scores)
+    validation_score = cross_valid_mean_score(val_scores, "val")
     metric_scores = {"time_lapsed": total_time, **training_score, **validation_score}
 
     return metric_scores
 
 
-def _date_time_record(date: str) -> str:
-    str_list = date.split()
-    execution_time = []
-
-    for idx, j in enumerate(["-", ":"]):
-        execution_time.append("".join(str_list[idx].split(j)))
-
-    return "_".join(execution_time)
-
-
 if __name__ == "__main__":
-    # Retrieve file path
+    print("Started cross validation ...")
+    params_loader = load_parameters("params.yml")
+
+    # Reading data file
+    parent_ = params_loader["data"]
+    path_in_ = parent_["split"]["path"]
+
+    train_in_ = Path(path_in_) / parent_["split"]["file"][0]
+    
+    # Cross-Validation utils
+    dev = params_loader["dev"]
+    
+    dev_path = dev["path"]
+    cross_valided = dev["cross-valid"]
+    cv_path_ = cross_valided["path"]
+    cv_model = cross_valided["model"]
+    cv_path_out_ = Path(f"{dev_path}/{cv_path_}/{cv_model}")
+    os.makedirs(cv_path_out_, exist_ok=True)
+    
+    # command-Line arguments
     parser = ArgumentParser()
     parser.add_argument(
-        "-s", "--split", help="accepts folder path from train/test split."
+        "-d", "--date", help="Recorded date during runtime execution."
     )
-    parser.add_argument(
-        "-d", "--date", help="retrieves datetime during script execution."
-    )
-    parser.add_argument("-o", "--out", help="contains model output path.")
-
+    
     args = parser.parse_args()
+    
+    date_time = date_time_record(args.date)
+    file_out_ = f"cross_valid_{date_time}.png"
 
-    # Load training dataset for model training
-    parameters = load_parameters("params.yml")
-    train_input_file = parameters["data"]["split"][0]
-    file_path = Path(args.split) / train_input_file
+    # Load training dataset
+    dataframe = pd.read_csv(train_in_)
+    x_all_ = dataframe[["text"]]
+    y_all_ = dataframe["sentiment"]
 
-    date_time = _date_time_record(args.date)
-    file_out_name = "cross_valid" + "_" + date_time + ".png"
-
-    data = pd.read_csv(file_path)
-    x_all_ = data[["text"]]
-    y_all_ = data[["sentiment"]]
-
-    # Training: cross validation process
-    seed = 43
-    models = {
-        "bayes": MultinomialNB(),
-        "svm": SVC(probability=True),
-        "lr": LogisticRegression(max_iter=100, random_state=seed),
-        "rf": RandomForestClassifier(random_state=seed),
-        "tree": DecisionTreeClassifier(random_state=seed),
-    }
-
-    # ToDo: check how roc_auc score are calculated for ensemble models
-    model_type = parameters["cross_valid"]["model"]
-    if model_type == "vote":
-        model = VotingClassifier(list(models.items()), voting="hard")
-    else:
-        model = models[model_type]
-
-    print("Started cross validation ...")
-    model_name = f"{model.__class__.__name__}".lower()
-    scores_ = cross_validation_func(model, x_all_, y_all_)
-
-    plot_output = Path(f"{args.out}/{model_name}") / file_out_name
-    os.makedirs(plot_output.parent, exist_ok=True)
-
-    cross_valid_score_plot(scores_, plot_output)
-    model_out = Path(plot_output.parent) / "model.pkl"
-    joblib.dump(model, model_out)
-    print("Process ended.")
-    print("Parent path: ", plot_output.parent)
-    print("File input path: ", file_path)
-    print("Image file output name: ", file_out_name)
-    print("Plot output file: ", plot_output)
+    # Initiate cross validation process
+    pickle_ = dev["file"]
+    num_split_ = cross_valided["n_split"]
+    seed_ = parent_["split"]["seed"]
+    
+    clf = select_model(cv_model, seed_)
+    scores_ = cross_valid_iteration(clf, x_all_, y_all_, num_split_, seed_)
+    
+    score_out_ = Path(cv_path_out_) / f"cv_scores_{date_time}.json"
+    
+    with open(score_out_, "w", encoding="utf-8") as f:
+        json.dump(scores_, f, ensure_ascii=False, indent=4)
+        
+    plot_file_out_ = Path(cv_path_out_) / file_out_
+    plot_cross_valid_score(scores_, plot_file_out_)
+    
+    model_file_out_ = Path(cv_path_out_) / pickle_
+    joblib.dump(clf, model_file_out_)
+    
+    # print(seed_)
+    # print(train_in_)
+    # print(cv_path_out_)
+    # print(clf.__class__.__name__)
+    # print(plot_file_out_)
+    # print(model_file_out_)
+    
