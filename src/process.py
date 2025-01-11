@@ -33,6 +33,7 @@ def __reading_file(folder: str) -> pd.DataFrame:
 
     return data
 
+
 # Consolidate negative and postive sentiments
 def __consolidate_sentiment(sentiment: str) -> str:
     if sentiment == "extremely positive":
@@ -42,6 +43,7 @@ def __consolidate_sentiment(sentiment: str) -> str:
         return "negative"
     else:
         return sentiment
+
 
 # Define Stopwords
 __covid_19_stopwords = [
@@ -62,16 +64,16 @@ __lemma = WordNetLemmatizer()
 def get_part_of_speech(tag):
     if tag.startswith("J"):
         return wordnet.ADJ
-    
+
     elif tag.startswith("V"):
         return wordnet.VERB
-    
+
     elif tag.startswith("N"):
         return wordnet.NOUN
-    
+
     elif tag.startswith("R"):
         return wordnet.ADV
-    
+
     else:
         return wordnet.NOUN
 
@@ -149,19 +151,19 @@ if __name__ == "__main__":
     print("Started preprocessing ...")
     # Processed DataSet
     params_loader = load_parameters("params.yml")
-    
+
     parent_ = params_loader["data"]
     path_in_ = Path(parent_["clean"]["path"])
-    
+
     path_out_ = parent_["processed"]["path"]
     os.makedirs(path_out_, exist_ok=True)
-    
+
     file_out_ = Path(path_out_) / parent_["processed"]["file"]
 
     print(list(path_in_.glob("*.csv")))
     print(file_out_)
-    
+
     # df = __preprocessing(path_in_)
     # df.to_csv(file_out_, index=False)
-    
+
     # print("Process completed!")

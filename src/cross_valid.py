@@ -18,28 +18,29 @@ from tqdm import tqdm
 from utils import (
     cross_valid_mean_score,
     calculate_metric_score,
-    load_parameters, model_pipeline,
+    load_parameters,
+    model_pipeline,
     date_time_record,
-    select_model
+    select_model,
 )
 
 
 # Barplots for metric comparisons
 def plot_cross_valid_score(scores: dict, out_path: str, img_pixel=100) -> None:
-    
+
     filter_metric = []
     for c, k in scores.items():
         c_split = c.split("_")
         if "time" in c:
             continue
-        
+
         if len(c_split) > 2:
             values = (c_split[0], "_".join(c_split[1:]), k)
         else:
             values = (*c_split, k)
-            
+
         filter_metric.append(values)
-        
+
     cols = ["fold", "metric", "score"]
     metric_df = pd.DataFrame(filter_metric, columns=cols).sort_values(
         "metric", ascending=False
@@ -48,7 +49,7 @@ def plot_cross_valid_score(scores: dict, out_path: str, img_pixel=100) -> None:
     # Seaborn plot
     plt.style.use("ggplot")
     fig, ax = plt.subplots(figsize=(10, 4))
-    
+
     sns.barplot(
         metric_df,
         x="metric",
@@ -71,8 +72,11 @@ def plot_cross_valid_score(scores: dict, out_path: str, img_pixel=100) -> None:
 
 
 def cross_valid_iteration(
-    baseline: BaseEstimator, x: pd.DataFrame, y: pd.DataFrame,
-    num_split: int, seed: float
+    baseline: BaseEstimator,
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    num_split: int,
+    seed: float,
 ) -> dict:
 
     pipe = model_pipeline(baseline)
@@ -123,25 +127,23 @@ if __name__ == "__main__":
     path_in_ = parent_["split"]["path"]
 
     train_in_ = Path(path_in_) / parent_["split"]["file"][0]
-    
+
     # Cross-Validation utils
     dev = params_loader["dev"]
-    
+
     dev_path = dev["path"]
     cross_valided = dev["cross-valid"]
     cv_path_ = cross_valided["path"]
     cv_model = cross_valided["model"]
     cv_path_out_ = Path(f"{dev_path}/{cv_path_}/{cv_model}")
     os.makedirs(cv_path_out_, exist_ok=True)
-    
+
     # command-Line arguments
     parser = ArgumentParser()
-    parser.add_argument(
-        "-d", "--date", help="Recorded date during runtime execution."
-    )
-    
+    parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
+
     args = parser.parse_args()
-    
+
     date_time = date_time_record(args.date)
     file_out_ = f"cross_valid_{date_time}.png"
 
@@ -154,25 +156,24 @@ if __name__ == "__main__":
     pickle_ = dev["file"]
     num_split_ = cross_valided["n_split"]
     seed_ = parent_["split"]["seed"]
-    
+
     clf = select_model(cv_model, seed_)
     scores_ = cross_valid_iteration(clf, x_all_, y_all_, num_split_, seed_)
-    
+
     score_out_ = Path(cv_path_out_) / f"cv_scores_{date_time}.json"
-    
+
     with open(score_out_, "w", encoding="utf-8") as f:
         json.dump(scores_, f, ensure_ascii=False, indent=4)
-        
+
     plot_file_out_ = Path(cv_path_out_) / file_out_
     plot_cross_valid_score(scores_, plot_file_out_)
-    
+
     model_file_out_ = Path(cv_path_out_) / pickle_
     joblib.dump(clf, model_file_out_)
-    
+
     # print(seed_)
     # print(train_in_)
     # print(cv_path_out_)
     # print(clf.__class__.__name__)
     # print(plot_file_out_)
     # print(model_file_out_)
-    

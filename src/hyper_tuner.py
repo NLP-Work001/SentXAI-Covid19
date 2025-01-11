@@ -18,7 +18,7 @@ def hyper_optimizer(
     x: pd.DataFrame,
     y: pd.DataFrame,
     num_split: float,
-    seed: int
+    seed: int,
 ) -> pd.DataFrame:
     # Define KFlod
     cv = StratifiedKFold(n_splits=num_split, random_state=seed, shuffle=True)
@@ -60,34 +60,34 @@ if __name__ == "__main__":
     parent_ = params_loader["data"]
     path_in_ = parent_["split"]["path"]
     train_in_ = Path(path_in_) / parent_["split"]["file"][0]
-    
+
     # Fine-Tuned utils
     dev = params_loader["dev"]
     dev_path = dev["path"]
-    cross_val_path = dev["cross-valid"]["path"] # arg1 in a function
-    tune = dev["fine-tune"] # arg2 in a function
+    cross_val_path = dev["cross-valid"]["path"]  # arg1 in a function
+    tune = dev["fine-tune"]  # arg2 in a function
     tune_path_ = tune["path"]
     tune_model = tune["model"]
-    
+
     cv_path_in_ = Path(f"{dev_path}/{cross_val_path}/{tune_model}")
     tune_path_out_ = Path(f"{dev_path}/{tune_path_}/{tune_model}")
     os.makedirs(tune_path_out_, exist_ok=True)
+    
     # command-Line arguments
     parser = ArgumentParser()
-    parser.add_argument(
-        "-d", "--date", help="Recorded date during runtime execution."
-    )
-    
+    parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
+
     args = parser.parse_args()
-    
+
     date_time = date_time_record(args.date)
     file_out_ = f"optimized_params_{date_time}.csv"
     tune_file_out_ = Path(tune_path_out_) / file_out_
+    
     # Load training dataset
     dataframe = pd.read_csv(train_in_)
     x_all_ = dataframe[["text"]]
     y_all_ = dataframe["sentiment"]
-    
+
     # Initiate hyer-tuner optimization
     num_split_ = tune["n_split"]
     seed_ = parent_["split"]["seed"]
@@ -95,10 +95,12 @@ if __name__ == "__main__":
     model = joblib.load(pickle_in_)
     model_param_ = tune_params[tune_model]
     pipe_params_ = [vector_params, model_param_]
-    
-    tune_results = hyper_optimizer(model, pipe_params_, x_all_, y_all_, num_split_, seed_)
+
+    tune_results = hyper_optimizer(
+        model, pipe_params_, x_all_, y_all_, num_split_, seed_
+    )
     tune_results.to_csv(tune_file_out_, index=False)
-    
+
     # print(seed_)
     # print(num_split_)
     # print(train_in_)
@@ -107,4 +109,3 @@ if __name__ == "__main__":
     # print(tune_file_out_)
     # print(pickle_in_)
     # print(pipe_params_)
-    

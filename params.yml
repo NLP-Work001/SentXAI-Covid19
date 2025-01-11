@@ -21,9 +21,12 @@ data:
 dev:
   path: models/
   file: model.pkl
+
   train:
-    path: train
-    name: logistic
+    path: trained/
+    model: logistic
+    encoder: label_encoder.pkl
+    metric: metrics.json
 
   cross-valid:
     model: logistic

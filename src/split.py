@@ -6,8 +6,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from utils import load_parameters
 
+
 # Train/Test Split
-def data_split(df: pd.DataFrame, train_out: str, test_out: str, ratio: float, seed: int) -> tuple:
+def data_split(
+    df: pd.DataFrame, train_out: str, test_out: str, ratio: float, seed: int
+) -> tuple:
     x_all = df[["text"]]
     y_all = df[["sentiment"]]
 
@@ -22,8 +25,9 @@ def data_split(df: pd.DataFrame, train_out: str, test_out: str, ratio: float, se
     # File split load
     train_.to_csv(train_out, index=False)
     test_.to_csv(test_out, index=False)
-    
+
     return train_.shape[0], test_.shape[0]
+
 
 # Main function
 def main() -> None:
@@ -42,13 +46,15 @@ def main() -> None:
     df = pd.read_csv(file_in_)
     train_out_ = Path(path_out_) / parent_["split"]["file"][0]
     test_out_ = Path(path_out_) / parent_["split"]["file"][1]
-  
+
     train_size, test_size = data_split(df, train_out_, test_out_, ratio_, seed_)
-    
-    file_log =  Path(path_out_) / "log.txt"
+
+    file_log = Path(path_out_) / "log.txt"
     with open(file_log, "w", encoding="utf-8") as f:
-        f.write(f"data row-size: {df.shape[0]} \n train-size: {train_size}\n test-size: {test_size}")
-        
+        f.write(
+            f"data row-size: {df.shape[0]} \n train-size: {train_size}\n test-size: {test_size}"
+        )
+
     print("Completed!")
 
 

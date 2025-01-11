@@ -16,6 +16,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import MultinomialNB
 
+
 # TFIDf token function
 def word_processor(doc: str):
     return doc
@@ -25,7 +26,7 @@ def word_processor(doc: str):
 def calculate_metric_score(
     model: BaseEstimator, x_values: pd.DataFrame, y_true: list
 ) -> dict:
-    
+
     f1 = f1_score(y_true, model.predict(x_values), average="weighted")
     roc_auc = roc_auc_score(
         y_true, model.predict_proba(x_values), average="weighted", multi_class="ovo"
@@ -47,12 +48,13 @@ def cross_valid_mean_score(metrics: list, alias="train") -> dict:
 
 # Load train/test split data
 def load_train_split(file_name: str) -> pd.DataFrame:
-    
+
     # ToDo: Modified the path code
     folder_dir = Path(os.path.abspath(".")) / "data/split"
     file_path = os.path.join(folder_dir, file_name)
     df = pd.read_csv(file_path)
     return df
+
 
 # Convert numerical labels into named labels
 def get_output_label(encoding, index, size=3) -> str:
@@ -79,13 +81,13 @@ def model_pipeline(
         vect = TfidfVectorizer(preprocessor=word_processor)
     else:
         vect = TfidfVectorizer(
-            ngram_range=vect_ngram_, norm=vect_norm_,
-            preprocessor=word_processor
+            ngram_range=vect_ngram_, norm=vect_norm_, preprocessor=word_processor
         )
 
     ct = make_column_transformer((vect, "text"), remainder="drop")
     pipeline = make_pipeline(ct, baseline)
     return pipeline
+
 
 # Select model for cross-val or fine-tuning
 def select_model(model: str, seed=0) -> BaseEstimator:
@@ -105,6 +107,7 @@ def load_parameters(file_name: str) -> dict:
         params = yaml.safe_load(f)
     return params
 
+
 # date & time recorder
 def date_time_record(date: str) -> str:
     str_list = date.split()
@@ -114,4 +117,3 @@ def date_time_record(date: str) -> str:
         execution_time.append("".join(str_list[idx].split(j)))
 
     return "_".join(execution_time)
-

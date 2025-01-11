@@ -11,6 +11,7 @@ from utils import load_parameters
 warnings.filterwarnings("ignore")
 # plt.style.use("ggplot")
 
+
 # Load processed data file
 def reading_file(file_path: str) -> pd.DataFrame:
     data = pd.read_csv(file_path)
@@ -115,6 +116,7 @@ def plot_label_distr(df: pd.DataFrame, file_out: str, palette="colorblind") -> N
 
     fig.savefig(file_name, dpi=100)
 
+
 def main() -> None:
     print("Started analysis ...")
     params_loader = load_parameters("params.yml")
@@ -132,13 +134,14 @@ def main() -> None:
 
     # print(file_in_)
     # print(file_out_)
-    
+
     # Log plots
     plot_label_distr(dataframe, path_out_)
     plot_sentence_token_length(dataframe, path_out_)
     plot_word_frequency(dataframe, path_out_)
-    
+
     print("Completed!")
-    
+
+
 if __name__ == "__main__":
     main()
