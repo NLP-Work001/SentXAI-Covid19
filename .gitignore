@@ -6,4 +6,5 @@ __pycache__
 .ruff_cache
 models/
 scripts/filter_tuned_params.sh
-/backend
+# backend/
+temp/

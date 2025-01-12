@@ -67,7 +67,7 @@ def get_output_label(encoding, index, size=3) -> str:
         arr = arr.reshape(1, size)
 
         output = encoding.inverse_transform(arr)[0]
-        return output
+        return str(output)
     except ValueError as e:
         print(f"Error: {e}")
         return ""

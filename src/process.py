@@ -116,6 +116,35 @@ def __text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
     data["text"] = data["text"].str.join(" ")
     return data[["tweet", "text", "sentiment"]]
 
+def text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
+    # Clean the text
+    data["text"] = data["tweet"].str.lower()
+    data["text"] = data["text"].apply(contractions.fix)
+    data["text"] = data["text"].str.replace(r"https:\W.+", "", regex=True)
+    data["text"] = data["text"].str.replace(r"@\w+|&\w+", "", regex=True)
+    data["text"] = data["text"].str.replace(
+        f"[{re.escape(string.punctuation)}]", " ", regex=True
+    )
+    data["text"] = data["text"].str.replace(r"\d+\w+", "", regex=True)
+
+    # Sentence lemmatization
+    data["text"] = data["text"].apply(sentence_lemmatizer)
+
+    # Handle encoding and decoding issues
+    data["text"] = data["text"].apply(lambda s: s.encode("ascii", "ignore"))
+    data["text"] = data["text"].apply(lambda s: s.decode("utf-8"))
+
+    # Remove stopwords (and potentially filter short words)
+    data["text"] = data["text"].apply(
+        lambda text: [
+            word
+            for word in text.split()
+            if word not in __custom_stopwords and len(word) > 2
+        ]
+    )
+    data["text"] = data["text"].str.join(" ")
+    return data[["tweet", "text"]]
+
 
 def __preprocessing(path: str) -> pd.DataFrame:
     # Loading complete data file
