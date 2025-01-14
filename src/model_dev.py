@@ -23,7 +23,7 @@ def main() -> None:
     models = {
         "bayes": MultinomialNB(),
         "svc": SVC(probability=True),
-        "logistic": LogisticRegression(random_state=seed_),
+        "logistic": LogisticRegression(random_state=seed_, max_iter=1000),
         "forest": RandomForestClassifier(random_state=seed_),
         "tree": DecisionTreeClassifier(random_state=seed_),
     }

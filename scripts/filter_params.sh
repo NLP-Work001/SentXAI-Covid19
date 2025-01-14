@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 
 # Constant variables
-folder="logistic"
+# folder="logistic"
+
+if [[ ! $# -eq 2 ]]; then
+    echo "USAGE: exactly two args are required!"
+    exit 1
+fi
+
+folder="$1"
+model_name="$2"
+
 declare -r path="models/tuned/$folder"
 declare -r json_output="${path}/best_params.json"
 
 find_params_score() {
-	local filter_values=('columntransformer__tfidfvectorizer__' 'logisticregression__')
+	local filter_values=("columntransformer__tfidfvectorizer__" "${model_name}__")
 	local best_params_=()
 
 	# Extract relevant parameters using grep and sed

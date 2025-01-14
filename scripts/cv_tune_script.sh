@@ -17,3 +17,9 @@ fi
 
 echo "Executing ${run_script} script ..."
 python "$run_script" -d "$date_time"
+
+# Execute script to filter best parameters
+# model_folder=$(echo "$run_python" | grep -E -o "[^folder:].*")
+# model_out=$(echo "$run_python" | grep -E -o "[^moodel:].*")
+# echo "Running filtering params script ..."
+# ./scripts/filter_params.sh "$model_folder" "$model_out"

@@ -18,6 +18,9 @@ data:
       - train.csv
       - test.csv 
 
+eda: 
+    path: ed-analytics/
+
 # Model Directories
 models:
   seed: 43
@@ -34,14 +37,9 @@ models:
   cross_validation:
     model: logistic
     n_splits: 5
-    path: cross_val/
-    file: model.pkl
+    path: cross_valid/
 
   fine_tune:
     model: logistic
     n_splits: 3
     path: tuned/
-
-# Analysis Paths
-analysis:
-  path: analytics/

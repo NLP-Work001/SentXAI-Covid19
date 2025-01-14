@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import json
 from argparse import ArgumentParser
@@ -119,32 +120,32 @@ def cross_valid_iteration(
 
 if __name__ == "__main__":
     print("Started cross validation ...")
-    params_loader = load_parameters("params.yml")
+    params_loader = load_parameters("config.yml")
 
     # Reading data file
-    parent_ = params_loader["data"]
-    path_in_ = parent_["split"]["path"]
-
-    train_in_ = Path(path_in_) / parent_["split"]["file"][0]
+    parent_split_ = params_loader["data"]
+    path_split_ = parent_split_["split"]
+    path_in_ = path_split_["path"]
+    train_in_ = Path(path_in_) / path_split_["files"][0]
 
     # Cross-Validation utils
-    dev = params_loader["dev"]
+    models_stage = params_loader["models"]
+    cross_val_stage = models_stage["cross_validation"]
+    model_name = cross_val_stage["model"]
+    cross_val_path_out_ = cross_val_stage["path"]
+    cross_out_ = Path(models_stage["dev"]["path"]) / cross_val_path_out_ / model_name
+    os.makedirs(cross_out_, exist_ok=True)
 
-    dev_path = dev["path"]
-    cross_valided = dev["cross-valid"]
-    cv_path_ = cross_valided["path"]
-    cv_model = cross_valided["model"]
-    cv_path_out_ = Path(f"{dev_path}/{cv_path_}/{cv_model}")
-    os.makedirs(cv_path_out_, exist_ok=True)
+    print(model_name)
+    print(cross_val_path_out_)
+    print(cross_out_)
 
     # command-Line arguments
     parser = ArgumentParser()
-    parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
+    parser.add_argument("-d", "--date", help="Recorded datetime during runtime execution.")
 
     args = parser.parse_args()
-
     date_time = date_time_record(args.date)
-    file_out_ = f"cross_valid_{date_time}.png"
 
     # Load training dataset
     dataframe = pd.read_csv(train_in_)
@@ -152,23 +153,38 @@ if __name__ == "__main__":
     y_all_ = dataframe["sentiment"]
 
     # Initiate cross validation process
-    pickle_ = dev["file"]
-    num_split_ = cross_valided["n_split"]
-    seed_ = parent_["split"]["seed"]
+    seed_ = models_stage["seed"]
+    num_split_ = cross_val_stage["n_splits"]
+    search_model_ = f"{model_name}_model.pkl"
+ 
+    # Check if model file exist in development stage
+    try:
+        models = [str(f).split("/")[-1] for f in list(Path(models_stage["dev"]["path"]).glob("*.pkl"))]
+        # print(models)
+        if not search_model_ in models:
+            raise ValueError(f"`{search_model_}` model does not exists! Please run model_dev.py script.")
 
-    clf = select_model(cv_model, seed_)
+    except ValueError as e:
+        sys.exit(f"{e}")
+
+    model_pickle_ = Path(models_stage["dev"]["path"]) / search_model_
+    clf = joblib.load(model_pickle_)
+    # print(seed_)
+    # print(num_split_)
+    # print(model_pickle_)
+    # print(clf.__class__.__name__)
+    # print(file_out_)
+
     scores_ = cross_valid_iteration(clf, x_all_, y_all_, num_split_, seed_)
-
-    score_out_ = Path(cv_path_out_) / f"cv_scores_{date_time}.json"
+    score_out_ = Path(cross_out_) / f"metrics_{date_time}.json"
 
     with open(score_out_, "w", encoding="utf-8") as f:
         json.dump(scores_, f, ensure_ascii=False, indent=4)
 
-    plot_file_out_ = Path(cv_path_out_) / file_out_
+    file_out_ = f"cross_valid_{date_time}.png"
+    plot_file_out_ = Path(cross_out_) / file_out_
     plot_cross_valid_score(scores_, plot_file_out_)
 
-    model_file_out_ = Path(cv_path_out_) / pickle_
-    joblib.dump(clf, model_file_out_)
 
     # print(seed_)
     # print(train_in_)

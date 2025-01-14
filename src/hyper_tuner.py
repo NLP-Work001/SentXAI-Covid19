@@ -16,7 +16,7 @@ def hyper_optimizer(
     baseline: BaseEstimator,
     pipeline_params: list,
     x: pd.DataFrame,
-    y: pd.DataFrame,
+    y: pd.Series,
     num_split: float,
     seed: int,
 ) -> pd.DataFrame:
@@ -54,24 +54,32 @@ def hyper_optimizer(
 
 if __name__ == "__main__":
     print("Started hyper-param tuning ...")
-    params_loader = load_parameters("params.yml")
-
+    params_loader = load_parameters("config.yml")
+    # fine_tune:
+    #     model: logistic
+    #     n_splits: 3
+    #     path: tuned/
+    
     # Reading data file
-    parent_ = params_loader["data"]
-    path_in_ = parent_["split"]["path"]
-    train_in_ = Path(path_in_) / parent_["split"]["file"][0]
+    # parent_ = params_loader["data"]
+    # path_in_ = parent_["split"]["path"]
+    # train_in_ = Path(path_in_) / parent_["split"]["file"][0]
+    parent_split_ = params_loader["data"]
+    path_split_ = parent_split_["split"]
+    path_in_ = path_split_["path"]
+    train_in_ = Path(path_in_) / path_split_["files"][0]
 
     # Fine-Tuned utils
-    dev = params_loader["dev"]
-    dev_path = dev["path"]
-    cross_val_path = dev["cross-valid"]["path"]  # arg1 in a function
-    tune = dev["fine-tune"]  # arg2 in a function
-    tune_path_ = tune["path"]
-    tune_model = tune["model"]
+    models_stage = params_loader["models"]
+    parent_tune_ = models_stage["fine_tune"]
+    model_name_ = parent_tune_["model"]
+    path_out_ = parent_tune_["path"]
+    tune_model_out_ = Path(models_stage["dev"]["path"]) / path_out_ / model_name_
+    os.makedirs(tune_model_out_, exist_ok=True)
 
-    cv_path_in_ = Path(f"{dev_path}/{cross_val_path}/{tune_model}")
-    tune_path_out_ = Path(f"{dev_path}/{tune_path_}/{tune_model}")
-    os.makedirs(tune_path_out_, exist_ok=True)
+    # print(model_name_)
+    # print(num_split_)
+    # print(tune_model_out_)
     
     # command-Line arguments
     parser = ArgumentParser()
@@ -80,26 +88,50 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     date_time = date_time_record(args.date)
-    file_out_ = f"optimized_params_{date_time}.csv"
-    tune_file_out_ = Path(tune_path_out_) / file_out_
-    
+
     # Load training dataset
     dataframe = pd.read_csv(train_in_)
     x_all_ = dataframe[["text"]]
     y_all_ = dataframe["sentiment"]
 
     # Initiate hyer-tuner optimization
-    num_split_ = tune["n_split"]
-    seed_ = parent_["split"]["seed"]
-    pickle_in_ = Path(cv_path_in_) / dev["file"]
-    model = joblib.load(pickle_in_)
-    model_param_ = tune_params[tune_model]
-    pipe_params_ = [vector_params, model_param_]
+    seed_ = models_stage["seed"]
+    num_split_ = parent_tune_["n_splits"]
+    search_model_ = f"{model_name_}_model.pkl"
+ 
+    # Check if model file exist in development stage
+    try:
+        models = [str(f).split("/")[-1] for f in list(Path(models_stage["dev"]["path"]).glob("*.pkl"))]
+        # print(models)
+        if not search_model_ in models:
+            raise ValueError(f"`{search_model_}` model does not exists! Please run model_dev.py script.")
+
+    except ValueError as e:
+        sys.exit(f"{e}")
+
+    model_pickle_ = Path(models_stage["dev"]["path"]) / search_model_
+    clf = joblib.load(model_pickle_)
+
+    model_params_ = tune_params[model_name_]
+    pipe_params_ = [vector_params, model_params_]
 
     tune_results = hyper_optimizer(
-        model, pipe_params_, x_all_, y_all_, num_split_, seed_
+        clf, pipe_params_, x_all_, y_all_, num_split_, seed_
     )
+
+    file_out_ = f"optimized_params_{date_time}.csv"
+    tune_file_out_ = Path(tune_model_out_) / file_out_
+    # print(file_out_)
+    # print(tune_file_out_)
+
     tune_results.to_csv(tune_file_out_, index=False)
+
+    model_out = clf.__class__.__name__.lower()
+    os.environ["FOLDER_NAME"] = model_name_
+    os.environ["MODEL_NAME"] = clf.__class__.__name__.lower()
+
+    print(f"folder: {os.environ.get('FOLDER_NAME')}")
+    print(f"moodel: {os.environ.get('MODEL_NAME')}")
 
     # print(seed_)
     # print(num_split_)

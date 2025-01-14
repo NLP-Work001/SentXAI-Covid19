@@ -119,13 +119,13 @@ def plot_label_distr(df: pd.DataFrame, file_out: str, palette="colorblind") -> N
 
 def main() -> None:
     print("Started analysis ...")
-    params_loader = load_parameters("params.yml")
+    params_loader = load_parameters("config.yml")
 
     parent_ = params_loader["data"]
     path_in_ = parent_["processed"]["path"]
     file_in_ = Path(path_in_) / parent_["processed"]["file"]
 
-    path_out_ = parent_["analysis"]["path"]
+    path_out_ = params_loader["eda"]["path"]
     os.makedirs(path_out_, exist_ok=True)
 
     # Reading file

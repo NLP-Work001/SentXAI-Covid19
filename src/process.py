@@ -160,7 +160,7 @@ def __preprocessing(path: str) -> pd.DataFrame:
     # Loading complete data file
     # ToDo: remove head for full data processing
     # TODO: Uncomment for faster testing 
-    data = __reading_file(path) #.head(5000)
+    data = __reading_file(path).head(5000)
     print(data.columns)
     # Preprocess pandas data
     data = data.rename(columns=str.lower)

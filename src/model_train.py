@@ -143,7 +143,7 @@ def _training(baseline_model: BaseEstimator, train_in_: str, test_in_: str, out_
     scores = {"train": train_scores, "test": test_scores}
 
     with open(out_["metric"], "w", encoding="utf-8") as f:
-        json.dump(scores, f)
+        json.dump(scores, f, ensure_ascii=False, indent=4)
 
     joblib.dump(model, out_["model"])
     labels_ = np.unique(binarizer.inverse_transform(y_test_))
@@ -199,7 +199,7 @@ def main() -> None:
     encoder_file_out_ = Path(path_out_.parent) / encoder_file_
     metrics_file_out_ = Path(path_out_) / metrics_file_
     output_model_file_ =  Path(path_out_) / "model.pkl"
-    
+
     out_ = {
         "path": path_out_,
         "model":  output_model_file_,
