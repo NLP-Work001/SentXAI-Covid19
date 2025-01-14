@@ -1,6 +1,6 @@
 ## **CI/CD: Sentiment Analysis for Covid-19 Tweets Using Explainable AI**
 
-#### **Project Description:**
+## **Project Description:**
 
 The dataset used in this project is open-sourced, [COVID-19 NLP Text Classification](https://www.kaggle.com/datasets/datatattle/covid-19-nlp-text-classification/data). It consists of COVID-19 tweets that are annotated into five labels: negative, extremely negative, positive, extremely positive, and neutral. For our purpose, we consolidated "negative" and "extremely negative" into "negative," and "positive" and "extremely positive" into "positive." The labels of interest will be "negative," "neutral," and "positive."
 
@@ -8,7 +8,7 @@ The main objective is to compare different machine learning models and automate 
 
 The main goal is to demonstrate the process of CI/CD automation in the field of machine learning while applying MLOps best practices.
 
-### Project Setup
+## **Project Setup**
 
 **Prerequisites:**
 
