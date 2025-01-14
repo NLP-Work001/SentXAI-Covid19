@@ -9,3 +9,5 @@ scripts/filter_tuned_params.sh
 # backend/
 temp/
 *gitCLI.ipynb
+gitCLI.ipynb
+.ipynb_checkpoints
