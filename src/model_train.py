@@ -7,8 +7,10 @@ from sklearn.base import BaseEstimator
 from sklearn.preprocessing import LabelBinarizer
 from pathlib import Path
 import numpy as np
-from sklearn.metrics import auc, roc_curve
+from sklearn.metrics import auc, roc_curve, classification_report
 from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay
+import sys
+import matplotlib.pyplot as plt
 
 from utils import (
     calculate_metric_score,
@@ -18,28 +20,31 @@ from utils import (
 )
 
 # Plot confusion matrix for multiclasses
-def mcm_plot(
+def plot_multilabel_cm(
+    model: BaseEstimator,
+    encoding: LabelBinarizer,
     y_true_: np.matrix,
-    x_pred_: pd.DataFrame,
-    labels_: list, 
+    x_test_: pd.DataFrame,
     out_: str
 ) -> None:
 
     # Compute multilabel confusion matrix
-    labels = ["ant", "bird", "cat"]
-    mcm = multilabel_confusion_matrix(y_true_, x_pred_, labels=labels_)
+    y_scores = model.predict(x_test_)
+    mcm = multilabel_confusion_matrix(y_true_.argmax(axis=1), y_scores)
 
     # Plot each confusion matrix
-    fig, axes = plt.subplots(1, len(labels), figsize=(15, 5))
-    for i, (matrix, label) in enumerate(zip(mcm, labels)):
-        disp = ConfusionMatrixDisplay(confusion_matrix=matrix, display_labels=["Not " + label, label])
+    fig, axes = plt.subplots(1, len(mcm), figsize=(15, 5))
+    for i, matrix in enumerate(mcm):
+        label = get_output_label(encoding, i)
+        disp = ConfusionMatrixDisplay(confusion_matrix=matrix, display_labels=[f"Not {label}", label])
         disp.plot(ax=axes[i], cmap=plt.cm.Blues, colorbar=False)
         axes[i].set_title(f"Confusion matrix for '{label}'")
         axes[i].grid(False)
 
     plt.tight_layout()
-    # plt.show()
-    fig.savefig(f"{out_}/model_name_confusion_plot.png", dpi=250)
+
+    path_out = Path(out_) / "confusion_matric_plot.png"
+    fig.savefig(path_out, dpi=250)
 
 # Plot ROC curve and ROC area
 def plot_roc_auc_curve(
@@ -53,11 +58,11 @@ def plot_roc_auc_curve(
     fpr = {}
     tpr = {}
     roc_auc = {}
-    n_classes = len(set(y_test_.argmax(axis=1)))
-    y_scores = model.predict_proba(y_true_)
+    n_classes = len(set(y_true_.argmax(axis=1)))
+    y_scores = model.predict_proba(x_test_)
 
     for i in range(n_classes):
-        fpr[i], tpr[i], _ = roc_curve(y_test_[:, i], y_scores[:, i])
+        fpr[i], tpr[i], _ = roc_curve(y_true_[:, i], y_scores[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     # # Plot ROC curve
@@ -87,7 +92,7 @@ def plot_roc_auc_curve(
     plt.title(f"Roc Curve for {model_name}.")
     plt.legend(loc="lower right")
 
-    fig.savefig(out_, dpi=dpi)
+    fig.savefig(Path(out_) / f"roc_auc_curve.png", dpi=dpi)
 
 # Access optimized model parameters
 def _tune_params_loader(path: str) -> dict:
@@ -126,69 +131,86 @@ def _training(baseline_model: BaseEstimator, train_in_: str, test_in_: str, out_
 
     # training model
     joblib.dump(binarizer, out_["encoder"])
-    
-    norm = out_["vectorizer"]["norm"]
-    ngram_range = out_["vectorizer"]["ngram_range"]
 
-    model = model_pipeline(baseline_model, ngram_range, norm).fit(
+    model = model_pipeline(baseline_model).fit(
         x_train_, y_train_.argmax(axis=1)
     )
 
     train_scores = calculate_metric_score(model, x_train_, y_train_.argmax(axis=1))
     test_scores = calculate_metric_score(model, x_test_, y_test_.argmax(axis=1))
 
+    # Log model artifacts
     scores = {"train": train_scores, "test": test_scores}
 
     with open(out_["metric"], "w", encoding="utf-8") as f:
         json.dump(scores, f)
 
     joblib.dump(model, out_["model"])
+    labels_ = np.unique(binarizer.inverse_transform(y_test_))
     plot_roc_auc_curve(model, binarizer, y_test_, x_test_, out_["plot_out"])
+    plot_multilabel_cm(model, binarizer, y_test_, x_test_, out_["plot_out"])
+    
+    # Log classification report
+    y_pred = model.predict(x_test_)
+    report = classification_report(y_test_.argmax(axis=1), y_pred, target_names=labels_ ,  output_dict=True)
+    report_df = pd.DataFrame(report).transpose()
+
+    report_df.to_csv(Path(out_["path"]) / "classification_report.csv", index=True)
 
     print("Training Scores: ", train_scores)
     print("Testing Scores: ", test_scores)
 
+
 def main() -> None:
     print("Started training ...")
-    params_loader = load_parameters("params.yml")
+    params_loader = load_parameters("config.yml")
 
     # Reading data file
-    parent_ = params_loader["data"]
-    path_in_ = parent_["split"]["path"]
-    train_in_ = Path(path_in_) / parent_["split"]["file"][0]
-    test_in_ = Path(path_in_) / parent_["split"]["file"][1]
-
+    parent_split_ = params_loader["data"]
+    path_split_ = parent_split_["split"]
+    path_in_ = path_split_["path"]
+    train_in_ = Path(path_in_) / path_split_["files"][0]
+    test_in_ = Path(path_in_) / path_split_["files"][1]
 
     # Train utils
-    dev = params_loader["dev"]
-    model_in_ = dev["path"]
-    file_in_ = dev["file"]
-    train_path_ = dev["train"]["path"]
-    model_type = dev["train"]["model"]
+    train_dev_ = params_loader["models"]
+    train_path_ = train_dev_["train"]["path"]
+    model_name_ = train_dev_["train"]["model"]
+    encoder_file_ = train_dev_["train"]["encoder"]
+    metrics_file_ = train_dev_["train"]["metrics"]
 
-    fetch_model_pickle_ = Path(f'{model_in_}/{dev["cross-valid"]["path"]}/{model_type}') / file_in_
-    fetch_param_in_ = Path(f'{model_in_}/{dev["fine-tune"]["path"]}/{model_type}')
-    path_out_ = Path(f"{model_in_}/{train_path_}/{model_type}")
+    # Setup output files
+    model_out_ = train_dev_["dev"]["path"]
+    path_out_ = Path(f"{model_out_}/{train_path_}/{model_name_}")
     os.makedirs(path_out_, exist_ok=True)
+    search_model_ = f"{model_name_}_model.pkl"
+   
+   # Check if model file exist in development stage
+    try:
+        models = [str(f).split("/")[-1] for f in list(Path(model_out_).glob("*.pkl"))]
+        # print(models)
+        if not search_model_ in models:
+            raise ValueError(f"`{search_model_}` model does not exists! Please run model_dev.py script.")
 
-    optimized_params = _tune_params_loader(fetch_param_in_)
+    except ValueError as e:
+        sys.exit(f"{e}")
 
-    vectorizer_params = optimized_params["vectorizer"]
-
+    # Setup Files output
+    encoder_file_out_ = Path(path_out_.parent) / encoder_file_
+    metrics_file_out_ = Path(path_out_) / metrics_file_
+    output_model_file_ =  Path(path_out_) / "model.pkl"
+    
     out_ = {
-        "model":  Path(path_out_) / file_in_,
-        "metric": Path(path_out_) / dev["train"]["metric"],
-        "encoder": Path(path_out_) / dev["train"]["encoder"],
-        "plot_out":  Path(path_out_) / "roc_auc_curve.png",
-        "vectorizer": vectorizer_params,
+        "path": path_out_,
+        "model":  output_model_file_,
+        "metric": metrics_file_out_,
+        "encoder": encoder_file_out_,
+        "plot_out":  Path(path_out_),
     }
 
-
-
     # Model training
-    model = joblib.load(fetch_model_pickle_)
-    model.set_params(**optimized_params["model"])
-
+    model = joblib.load(Path(model_out_) / search_model_)
+    # model.set_params(**optimized_params["model"])
     _training(model, train_in_, test_in_, out_)
 
 
