@@ -1,7 +1,7 @@
 import os
 import warnings
 from pathlib import Path
-
+import sys
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -122,10 +122,9 @@ def main() -> None:
     params_loader = load_parameters("config.yml")
 
     parent_ = params_loader["data"]
-    path_in_ = parent_["processed"]["path"]
-    file_in_ = Path(path_in_) / parent_["processed"]["file"]
+    file_in_ = Path(sys.argv[1]) / parent_["processed"]["file"]
 
-    path_out_ = params_loader["eda"]["path"]
+    path_out_ = sys.argv[2]
     os.makedirs(path_out_, exist_ok=True)
 
     # Reading file

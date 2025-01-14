@@ -74,9 +74,8 @@ if __name__ == "__main__":
     parent_tune_ = models_stage["fine_tune"]
     model_name_ = parent_tune_["model"]
     path_out_ = parent_tune_["path"]
-    tune_model_out_ = Path(models_stage["dev"]["path"]) / path_out_ / model_name_
-    os.makedirs(tune_model_out_, exist_ok=True)
-
+    # tune_model_out_ = Path(models_stage["dev"]["path"]).parent / path_out_ / model_name_
+    # print(tune_model_out_)
     # print(model_name_)
     # print(num_split_)
     # print(tune_model_out_)
@@ -84,10 +83,12 @@ if __name__ == "__main__":
     # command-Line arguments
     parser = ArgumentParser()
     parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
-
+    parser.add_argument("-o", "--out", help="Output model directory")
     args = parser.parse_args()
 
     date_time = date_time_record(args.date)
+    tune_model_out_ = args.out
+    os.makedirs(tune_model_out_, exist_ok=True)
 
     # Load training dataset
     dataframe = pd.read_csv(train_in_)

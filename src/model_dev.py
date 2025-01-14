@@ -1,5 +1,6 @@
 import os
 import joblib
+import sys
 from pathlib import Path
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -14,8 +15,8 @@ def main() -> None:
     parent_ = load_parameters("config.yml")
     dev_ = parent_["models"]["dev"]
     seed_ = parent_["models"]["seed"]
-    path_out_ = dev_["path"]
     file_out_ = dev_["file"]
+    path_out_ = sys.argv[1]
     os.makedirs(path_out_, exist_ok=True)
     
     

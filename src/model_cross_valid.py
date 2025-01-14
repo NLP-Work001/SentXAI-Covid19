@@ -133,20 +133,22 @@ if __name__ == "__main__":
     cross_val_stage = models_stage["cross_validation"]
     model_name = cross_val_stage["model"]
     cross_val_path_out_ = cross_val_stage["path"]
-    cross_out_ = Path(models_stage["dev"]["path"]) / cross_val_path_out_ / model_name
-    os.makedirs(cross_out_, exist_ok=True)
+
+   
 
     print(model_name)
     print(cross_val_path_out_)
-    print(cross_out_)
 
     # command-Line arguments
     parser = ArgumentParser()
     parser.add_argument("-d", "--date", help="Recorded datetime during runtime execution.")
-
+    parser.add_argument("-o", "--out", help="Output model directory")
     args = parser.parse_args()
-    date_time = date_time_record(args.date)
 
+    date_time = date_time_record(args.date)
+    cross_out_ = args.out
+    os.makedirs(cross_out_, exist_ok=True)
+    print(cross_out_)
     # Load training dataset
     dataframe = pd.read_csv(train_in_)
     x_all_ = dataframe[["text"]]

@@ -1,0 +1,71 @@
+stages:
+  process:
+    cmd: python src/process.py data/raw/covid-19-tweets data/processed/processed_tweets.csv
+    deps:
+    - data/raw/covid-19-tweets
+    - src/process.py
+    params:
+    - config.yml:
+      - data.processed.data_size
+    outs:
+    - data/processed
+  split:
+    cmd: python src/split.py data/processed data/split
+    deps:
+    - data/processed
+    - src/split.py
+    params:
+    - config.yml:
+      - data.split.ratio
+      - data.split.seed
+    outs:
+    - data/split
+  eda:
+    cmd: python src/ed_analytics.py data/processed ed-analytics/
+    deps:
+    - data/processed
+    - src/ed_analytics.py
+    params:
+    - config.yml:
+      - data.processed.data_size
+    outs:
+    - ed-analytics/
+  dev:
+    cmd: python src/model_dev.py models/central/
+    deps:
+    - src/model_dev.py
+    params:
+    - config.yml:
+      - models.seed
+    outs:
+    - models/central/
+  train:
+    cmd: ./scripts/run_model_script.sh model_train.py models/trained/
+    deps:
+    - scripts/run_model_script.sh
+    params:
+    - config.yml:
+      - models.train.model
+    outs:
+    - models/trained/
+  cross_valid:
+    cmd: ./scripts/run_model_script.sh model_cross_valid.py models/cross_valid/
+    deps:
+    - scripts/run_model_script.sh
+    params:
+    - config.yml:
+      - models.cross_validation.model
+      - models.cross_validation.n_splits
+    outs:
+    - models/cross_valid/
+  hyper_tuner:
+    cmd: ./scripts/run_model_script.sh hyper_tuner.py models/tuned/
+    deps:
+    - data/split
+    - scripts/run_model_script.sh
+    params:
+    - config.yml:
+      - models.fine_tune.model
+      - models.fine_tune.n_splits
+    outs:
+    - models/tuned/

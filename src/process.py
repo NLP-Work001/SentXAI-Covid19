@@ -1,4 +1,5 @@
 import re
+import sys
 import string
 import warnings
 from pathlib import Path
@@ -156,11 +157,17 @@ def text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
     return data[["tweet", "text"]]
 
 
-def __preprocessing(path: str) -> pd.DataFrame:
+def __preprocessing(path: str, data_size=None) -> pd.DataFrame:
     # Loading complete data file
     # ToDo: remove head for full data processing
-    # TODO: Uncomment for faster testing 
-    data = __reading_file(path).head(5000)
+    # TODO: Uncomment for faster testing
+    if data_size is None:
+        data = __reading_file(path)
+        # sys.exit("Data Size is not none.")
+    else:
+        print("Data Size is not none")
+        data = __reading_file(path).head(data_size)
+
     print(data.columns)
     # Preprocess pandas data
     data = data.rename(columns=str.lower)
@@ -193,23 +200,27 @@ def main() -> None:
     params_loader = load_parameters("config.yml")
 
     parent_ = params_loader["data"]
-    path_in_ = Path(parent_["raw"]["path"])
+    data_size = parent_["processed"]["data_size"]
 
-    path_out_ = parent_["processed"]["path"]
-    os.makedirs(path_out_, exist_ok=True)
+    print(data_size)
+    # Command-line args
+    file_in_dir_ = sys.argv[1]
+    file_out_ = sys.argv[2]
 
-    file_out_ = Path(path_out_) / parent_["processed"]["file"]
+    folder_out_ = Path(file_out_).parent
+    os.makedirs(folder_out_, exist_ok=True)
 
+    print("Parent output folder: ", folder_out_)
     
     try:
         # Raise custom exception only if the folder has no csv files.
-        if not list(path_in_.glob("*.csv")):
-            raise ValueError(f"There is no `csv` file in `{path_in_}`.") 
+        if not list(Path(file_in_dir_).glob("*.csv")):
+            raise ValueError(f"There is no `csv` file in `{file_in_dir_}`.") 
 
         # print(list(path_in_.glob("*.csv")))
         # print(file_out_)
 
-        df = __preprocessing(path_in_)
+        df = __preprocessing(Path(file_in_dir_), data_size)
         df.to_csv(file_out_, index=False)
         print("Process completed!")
     except ValueError as e:

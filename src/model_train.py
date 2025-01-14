@@ -17,6 +17,7 @@ from utils import (
     load_parameters,
     get_output_label,
     model_pipeline,
+    date_time_record
 )
 
 # Plot confusion matrix for multiclasses
@@ -163,6 +164,19 @@ def _training(baseline_model: BaseEstimator, train_in_: str, test_in_: str, out_
 
 def main() -> None:
     print("Started training ...")
+
+
+
+    # command-Line arguments
+    parser = ArgumentParser()
+    parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
+    parser.add_argument("-o", "--out", help="Output model directory")
+    args = parser.parse_args()
+
+    date_time = date_time_record(args.date)
+    model_output_folder_ = args.out
+    os.makedirs(model_output_folder_, exist_ok=True)
+    # Load configs file
     params_loader = load_parameters("config.yml")
 
     # Reading data file
@@ -174,15 +188,13 @@ def main() -> None:
 
     # Train utils
     train_dev_ = params_loader["models"]
-    train_path_ = train_dev_["train"]["path"]
+    # train_path_ = train_dev_["train"]["path"]
     model_name_ = train_dev_["train"]["model"]
     encoder_file_ = train_dev_["train"]["encoder"]
     metrics_file_ = train_dev_["train"]["metrics"]
 
     # Setup output files
     model_out_ = train_dev_["dev"]["path"]
-    path_out_ = Path(f"{model_out_}/{train_path_}/{model_name_}")
-    os.makedirs(path_out_, exist_ok=True)
     search_model_ = f"{model_name_}_model.pkl"
    
    # Check if model file exist in development stage
@@ -196,16 +208,16 @@ def main() -> None:
         sys.exit(f"{e}")
 
     # Setup Files output
-    encoder_file_out_ = Path(path_out_.parent) / encoder_file_
-    metrics_file_out_ = Path(path_out_) / metrics_file_
-    output_model_file_ =  Path(path_out_) / "model.pkl"
+    encoder_file_out_ = Path(model_output_folder_) / encoder_file_
+    metrics_file_out_ = Path(model_output_folder_) / metrics_file_
+    output_model_file_ =  Path(model_output_folder_) / "model.pkl"
 
     out_ = {
-        "path": path_out_,
+        "path": model_output_folder_,
         "model":  output_model_file_,
         "metric": metrics_file_out_,
         "encoder": encoder_file_out_,
-        "plot_out":  Path(path_out_),
+        "plot_out":  Path(model_output_folder_),
     }
 
     # Model training

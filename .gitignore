@@ -11,3 +11,8 @@ temp/
 *gitCLI.ipynb
 gitCLI.ipynb
 .ipynb_checkpoints
+ed-analytics/
+/ed-analytics
+/models
+/trained
+/cross_valid

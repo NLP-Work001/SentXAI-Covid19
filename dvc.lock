@@ -1,0 +1,140 @@
+schema: '2.0'
+stages:
+  process:
+    cmd: python src/process.py data/raw/covid-19-tweets data/processed/processed_tweets.csv
+    deps:
+    - path: data/raw/covid-19-tweets
+      hash: md5
+      md5: 9c7fc07f5cb4acdbd4da5fd73c2fe864.dir
+      size: 11502756
+      nfiles: 2
+    - path: src/process.py
+      hash: md5
+      md5: 0d157d2423b275fe98f22f2788c1e89d
+      size: 7011
+    params:
+      config.yml:
+        data.processed.data_size: 5000
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 278ce6532823d3e228039c4190a2218e.dir
+      size: 1505319
+      nfiles: 1
+  split:
+    cmd: python src/split.py data/processed data/split
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: 278ce6532823d3e228039c4190a2218e.dir
+      size: 1505319
+      nfiles: 1
+    - path: src/split.py
+      hash: md5
+      md5: 23253844d4f2105981ad63eb3d4a7560
+      size: 1979
+    params:
+      config.yml:
+        data.split.ratio: 0.25
+        data.split.seed: 42
+    outs:
+    - path: data/split
+      hash: md5
+      md5: 13f1565cca77b6af1d15eb522ec53f75.dir
+      size: 505400
+      nfiles: 3
+  eda:
+    cmd: python src/ed_analytics.py data/processed ed-analytics/
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: 278ce6532823d3e228039c4190a2218e.dir
+      size: 1505319
+      nfiles: 1
+    - path: src/ed_analytics.py
+      hash: md5
+      md5: 7718abb0bf823b7559b844d77e28261a
+      size: 4143
+    params:
+      config.yml:
+        data.processed.data_size: 5000
+    outs:
+    - path: ed-analytics/
+      hash: md5
+      md5: 1c32eb6c9c843fecc4a5dcbb6a808ebd.dir
+      size: 94290
+      nfiles: 3
+  dev:
+    cmd: python src/model_dev.py models/central/
+    deps:
+    - path: src/model_dev.py
+      hash: md5
+      md5: 2c47c01dea1ad86910adb3c0fafbe49e
+      size: 1253
+    params:
+      config.yml:
+        models.seed: 43
+    outs:
+    - path: models/central/
+      hash: md5
+      md5: 36b4dbf288f8b1bf3e23f92aadc968a1.dir
+      size: 1840
+      nfiles: 5
+  train:
+    cmd: ./scripts/run_model_script.sh model_train.py models/trained/
+    deps:
+    - path: scripts/run_model_script.sh
+      hash: md5
+      md5: eacf6d20a771004f602cfddfa8f019f9
+      size: 814
+      isexec: true
+    params:
+      config.yml:
+        models.train.model: logistic
+    outs:
+    - path: models/trained/
+      hash: md5
+      md5: 9bbb739f4a25f6533c0f083dde8010a1.dir
+      size: 579966
+      nfiles: 6
+  cross_valid:
+    cmd: ./scripts/run_model_script.sh model_cross_valid.py models/cross_valid/
+    deps:
+    - path: scripts/run_model_script.sh
+      hash: md5
+      md5: eacf6d20a771004f602cfddfa8f019f9
+      size: 814
+      isexec: true
+    params:
+      config.yml:
+        models.cross_validation.model: logistic
+        models.cross_validation.n_splits: 5
+    outs:
+    - path: models/cross_valid/
+      hash: md5
+      md5: 1dfd3f148704dd9f638ceac0fa09029b.dir
+      size: 16135
+      nfiles: 2
+  hyper_tuner:
+    cmd: ./scripts/run_model_script.sh hyper_tuner.py models/tuned/
+    deps:
+    - path: data/split
+      hash: md5
+      md5: 13f1565cca77b6af1d15eb522ec53f75.dir
+      size: 505400
+      nfiles: 3
+    - path: scripts/run_model_script.sh
+      hash: md5
+      md5: eacf6d20a771004f602cfddfa8f019f9
+      size: 814
+      isexec: true
+    params:
+      config.yml:
+        models.fine_tune.model: logistic
+        models.fine_tune.n_splits: 3
+    outs:
+    - path: models/tuned/
+      hash: md5
+      md5: 5f98df9c2d1adc232981aca0cd5b1f74.dir
+      size: 15213
+      nfiles: 1

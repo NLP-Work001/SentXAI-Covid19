@@ -35,12 +35,11 @@ def main() -> None:
     params_loader = load_parameters("config.yml")
 
     parent_ = params_loader["data"]
-    path_in_ = parent_["processed"]["path"]
-    file_in_ = Path(path_in_) / parent_["processed"]["file"]
+    file_in_ = Path(sys.argv[1]) / parent_["processed"]["file"]
 
-    path_split_ = parent_["split"]
-    path_out_ = path_split_["path"]
+    path_out_ = sys.argv[2]
     os.makedirs(path_out_, exist_ok=True)
+    path_split_ = parent_["split"]
     ratio_ = path_split_["ratio"]
     seed_ = path_split_["seed"]
 
