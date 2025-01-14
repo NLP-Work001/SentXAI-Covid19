@@ -8,13 +8,55 @@ The main objective is to compare different machine learning models and automate 
 
 The main goal is to demonstrate the process of CI/CD automation in the field of machine learning while applying MLOps best practices.
 
-#### **Project Substages:**
+### Project Setup
 
-* **Stage 1 (notebooks/):**
-    * Data cleaning and data loading: `notebook_v001`
-    * Data analysis: `notebook_v002`
-    * Model development and evaluation without thorough experimentation: `notebook_v003`
+**Prerequisites:**
 
-* **Stage 2: Model Development**
+* Git installed on your system (https://git-scm.com/downloads)
+* Python 3.x installed on your system (https://www.python.org/downloads/)
 
-* **Stage 3: Model Deployment**
+**Steps:**
+
+0. **Clone the project:**
+
+   ```bash
+   git clone[https://github.com/NLP-Work001/SentXAI-Covid19.git
+   cd SentXAI-Covid19/
+   ```
+
+1. **Create data directory:**
+
+   ```bash
+   mkdir -p data/raw/covid-19-tweets
+   ```
+
+2. **Download COVID-19 tweets data:**
+
+   Download the COVID-19 tweets dataset from [download-covid19](https://www.kaggle.com/datasets/datatattle/covid-19-nlp-text-classification/data) and extract the contents into the `data/raw/covid-19-tweets` directory.
+
+   The data should be separated into train and test CSV files. **Do not modify the file names.**
+
+3. **Install requirements:**
+
+   Set up a Python virtual environment to isolate project dependencies and activate it.  Activation commands might differ slightly based on your operating system:
+
+   **Linux/macOS:**
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+   **Windows:**
+
+   ```bash
+   python -m venv .venv
+   venv\Scripts\activate
+   ```
+
+   Once activated, install the required packages using:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
