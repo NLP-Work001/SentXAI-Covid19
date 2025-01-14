@@ -1,40 +1,47 @@
-project: Covid-19 tweets Classification (NLP)
+---
+Project: Covid-19 tweets Classification (NLP)
+
+# Data Paths
 data:
-  clean:
+  raw: 
     path: data/raw/covid-19-tweets
 
-  processed:
+  processed: 
     path: data/processed
     file: processed_tweets.csv
-
-  analysis:
-    path: analytics/
 
   split:
     path: data/split
     ratio: 0.2
     seed: 43
-    file:
+    files: 
       - train.csv
-      - test.csv
+      - test.csv 
 
-dev:
-  path: models/
-  file: model.pkl
+# Model Directories
+models:
+  seed: 43
+  dev:
+    path: models/
+    file: model.pkl
 
   train:
     path: trained/
     model: logistic
     encoder: label_encoder.pkl
-    metric: metrics.json
+    metrics: metrics.json
 
-  cross-valid:
+  cross_validation:
     model: logistic
-    n_split: 5
+    n_splits: 5
     path: cross_val/
     file: model.pkl
 
-  fine-tune:
+  fine_tune:
     model: logistic
-    n_split: 3
+    n_splits: 3
     path: tuned/
+
+# Analysis Paths
+analysis:
+  path: analytics/

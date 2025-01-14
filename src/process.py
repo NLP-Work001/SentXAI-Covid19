@@ -14,7 +14,7 @@ from utils import load_parameters
 
 warnings.filterwarnings("ignore")
 
-# # Download NLTK resources
+# Download NLTK resources
 # nltk.download("popular", quiet=True)
 # nltk.download("punkt_tab", quiet=True)
 # nltk.download("averaged_perceptron_tagger_eng", quiet=True)
@@ -116,7 +116,17 @@ def __text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
     data["text"] = data["text"].str.join(" ")
     return data[["tweet", "text", "sentiment"]]
 
+# Process one-dimensional text (sentence/paragraph)
 def text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
+    """This function performs text preprocessing on a pandas DataFrame.
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the text data. 
+    Returns:
+        pd.DataFrame: A DataFrame with two features:
+            - **tweet:** The original, non-preprocessed text.
+            - **text:** The preprocessed text.
+     """
+
     # Clean the text
     data["text"] = data["tweet"].str.lower()
     data["text"] = data["text"].apply(contractions.fix)
@@ -149,8 +159,9 @@ def text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
 def __preprocessing(path: str) -> pd.DataFrame:
     # Loading complete data file
     # ToDo: remove head for full data processing
-    data = __reading_file(path).head(5000)
-
+    # TODO: Uncomment for faster testing 
+    data = __reading_file(path) #.head(5000)
+    print(data.columns)
     # Preprocess pandas data
     data = data.rename(columns=str.lower)
     data = data[["originaltweet", "sentiment"]]
@@ -176,23 +187,35 @@ def __preprocessing(path: str) -> pd.DataFrame:
     return dataframe
 
 
-if __name__ == "__main__":
+def main() -> None:
     print("Started preprocessing ...")
     # Processed DataSet
-    params_loader = load_parameters("params.yml")
+    params_loader = load_parameters("config.yml")
 
     parent_ = params_loader["data"]
-    path_in_ = Path(parent_["clean"]["path"])
+    path_in_ = Path(parent_["raw"]["path"])
 
     path_out_ = parent_["processed"]["path"]
     os.makedirs(path_out_, exist_ok=True)
 
     file_out_ = Path(path_out_) / parent_["processed"]["file"]
 
-    print(list(path_in_.glob("*.csv")))
-    print(file_out_)
+    
+    try:
+        # Raise custom exception only if the folder has no csv files.
+        if not list(path_in_.glob("*.csv")):
+            raise ValueError(f"There is no `csv` file in `{path_in_}`.") 
 
-    # df = __preprocessing(path_in_)
-    # df.to_csv(file_out_, index=False)
+        # print(list(path_in_.glob("*.csv")))
+        # print(file_out_)
 
-    # print("Process completed!")
+        df = __preprocessing(path_in_)
+        df.to_csv(file_out_, index=False)
+        print("Process completed!")
+    except ValueError as e:
+        print(f"{e}")
+
+if __name__ == "__main__":
+    main()
+
+
