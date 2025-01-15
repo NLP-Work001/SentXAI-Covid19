@@ -16,3 +16,6 @@ ed-analytics/
 /models
 /trained
 /cross_valid
+*gsheet
+*.gsheet
+*.xlsx

@@ -33,6 +33,13 @@ models:
     encoder: label_encoder.pkl
     metrics: metrics.json
 
+  retrain:
+    is_retrained: True
+    path: retrained/
+    model: logistic
+    encoder: label_encoder
+    metrics: metrics.json
+
   cross_validation:
     model: logistic
     n_splits: 5

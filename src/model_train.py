@@ -165,16 +165,23 @@ def _training(baseline_model: BaseEstimator, train_in_: str, test_in_: str, out_
 def main() -> None:
     print("Started training ...")
 
-
-
     # command-Line arguments
     parser = ArgumentParser()
     parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
     parser.add_argument("-o", "--out", help="Output model directory")
     args = parser.parse_args()
 
+    # ToDo: WriteUp retraing logic before connecting MLflow and DagsHUB
+    # ToDo: Add Jenkins and Github Actions operations
+    is_retrained = True
+
     date_time = date_time_record(args.date)
-    model_output_folder_ = args.out
+    if is_retrained:
+        print('Retraining  model with optimized parameters ...')
+        model_output_folder_ = "models/retrained"
+    else:
+        model_output_folder_ = args.out
+
     os.makedirs(model_output_folder_, exist_ok=True)
     # Load configs file
     params_loader = load_parameters("config.yml")
@@ -222,7 +229,11 @@ def main() -> None:
 
     # Model training
     model = joblib.load(Path(model_out_) / search_model_)
-    # model.set_params(**optimized_params["model"])
+
+    if is_retrained:
+        optimized_params = _tune_params_loader("models/tuned")
+        model.set_params(**optimized_params["model"])
+
     _training(model, train_in_, test_in_, out_)
 
 
