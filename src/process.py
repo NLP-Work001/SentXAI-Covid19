@@ -15,24 +15,18 @@ from utils import load_parameters
 
 warnings.filterwarnings("ignore")
 
-# Download NLTK resources
-# nltk.download("popular", quiet=True)
-# nltk.download("punkt_tab", quiet=True)
-# nltk.download("averaged_perceptron_tagger_eng", quiet=True)
-
-
 # Loading data method
 def __reading_file(folder: str) -> pd.DataFrame:
-    data = pd.DataFrame()
+    df = pd.DataFrame()
     for path in list(folder.glob("*.csv")):
         data = pd.read_csv(path, encoding="latin1")
-        data = (
-            pd.concat([data, data], axis=0)
+        df = (
+            pd.concat([df, data], axis=0)
             .sample(frac=1, random_state=43)
             .reset_index(drop=True)
         )
 
-    return data
+    return df
 
 
 # Consolidate negative and postive sentiments
@@ -121,7 +115,7 @@ def __text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
 def text_preprocessing(data: pd.DataFrame) -> pd.DataFrame:
     """This function performs text preprocessing on a pandas DataFrame.
     Args:
-        data (pd.DataFrame): The input DataFrame containing the text data. 
+        data (pd.DataFrame): The input DataFrame containing the text data.
     Returns:
         pd.DataFrame: A DataFrame with two features:
             - **tweet:** The original, non-preprocessed text.
@@ -211,11 +205,11 @@ def main() -> None:
     os.makedirs(folder_out_, exist_ok=True)
 
     print("Parent output folder: ", folder_out_)
-    
+
     try:
         # Raise custom exception only if the folder has no csv files.
         if not list(Path(file_in_dir_).glob("*.csv")):
-            raise ValueError(f"There is no `csv` file in `{file_in_dir_}`.") 
+            raise ValueError(f"There is no `csv` file in `{file_in_dir_}`.")
 
         # print(list(path_in_.glob("*.csv")))
         # print(file_out_)
@@ -228,5 +222,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

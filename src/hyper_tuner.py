@@ -1,6 +1,7 @@
+import os
 from argparse import ArgumentParser
 from pathlib import Path
-import os
+
 import joblib
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     #     model: logistic
     #     n_splits: 3
     #     path: tuned/
-    
+
     # Reading data file
     # parent_ = params_loader["data"]
     # path_in_ = parent_["split"]["path"]
@@ -79,7 +80,7 @@ if __name__ == "__main__":
     # print(model_name_)
     # print(num_split_)
     # print(tune_model_out_)
-    
+
     # command-Line arguments
     parser = ArgumentParser()
     parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
@@ -99,13 +100,18 @@ if __name__ == "__main__":
     seed_ = models_stage["seed"]
     num_split_ = parent_tune_["n_splits"]
     search_model_ = f"{model_name_}_model.pkl"
- 
+
     # Check if model file exist in development stage
     try:
-        models = [str(f).split("/")[-1] for f in list(Path(models_stage["dev"]["path"]).glob("*.pkl"))]
+        models = [
+            str(f).split("/")[-1]
+            for f in list(Path(models_stage["dev"]["path"]).glob("*.pkl"))
+        ]
         # print(models)
         if not search_model_ in models:
-            raise ValueError(f"`{search_model_}` model does not exists! Please run model_dev.py script.")
+            raise ValueError(
+                f"`{search_model_}` model does not exists! Please run model_dev.py script."
+            )
 
     except ValueError as e:
         sys.exit(f"{e}")
@@ -116,9 +122,7 @@ if __name__ == "__main__":
     model_params_ = tune_params[model_name_]
     pipe_params_ = [vector_params, model_params_]
 
-    tune_results = hyper_optimizer(
-        clf, pipe_params_, x_all_, y_all_, num_split_, seed_
-    )
+    tune_results = hyper_optimizer(clf, pipe_params_, x_all_, y_all_, num_split_, seed_)
 
     file_out_ = f"optimized_params_{date_time}.csv"
     tune_file_out_ = Path(tune_model_out_) / file_out_
