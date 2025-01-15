@@ -22,7 +22,7 @@ jobs:
       
     - name: Analysing the code quality
       run: |
-        isort format "src/*.py"
-        ruff format "src/*.py"
-        pylint "src/.*py"
-        flake8 "src/*.py"
+        isort format "src/**/*.py"
+        ruff format "src/**/*.py"
+        pylint "src/**/*.py"
+        flake8 "src/**/*.py"
