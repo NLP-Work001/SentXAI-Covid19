@@ -1,7 +1,7 @@
+import json
 import os
 import sys
 import time
-import json
 from argparse import ArgumentParser
 from datetime import timedelta
 from pathlib import Path
@@ -17,17 +17,16 @@ from sklearn.preprocessing import LabelEncoder
 from tqdm import tqdm
 
 from utils import (
-    cross_valid_mean_score,
     calculate_metric_score,
+    cross_valid_mean_score,
+    date_time_record,
     load_parameters,
     model_pipeline,
-    date_time_record,
-    select_model,
 )
+
 
 # Barplots for metric comparisons
 def plot_cross_valid_score(scores: dict, out_path: str, img_pixel=100) -> None:
-
     filter_metric = []
     for c, k in scores.items():
         c_split = c.split("_")
@@ -78,7 +77,6 @@ def cross_valid_iteration(
     num_split: int,
     seed: float,
 ) -> dict:
-
     pipe = model_pipeline(baseline)
 
     label_encoding = LabelEncoder()
@@ -134,14 +132,14 @@ if __name__ == "__main__":
     model_name = cross_val_stage["model"]
     cross_val_path_out_ = cross_val_stage["path"]
 
-   
-
     print(model_name)
     print(cross_val_path_out_)
 
     # command-Line arguments
     parser = ArgumentParser()
-    parser.add_argument("-d", "--date", help="Recorded datetime during runtime execution.")
+    parser.add_argument(
+        "-d", "--date", help="Recorded datetime during runtime execution."
+    )
     parser.add_argument("-o", "--out", help="Output model directory")
     args = parser.parse_args()
 
@@ -158,13 +156,18 @@ if __name__ == "__main__":
     seed_ = models_stage["seed"]
     num_split_ = cross_val_stage["n_splits"]
     search_model_ = f"{model_name}_model.pkl"
- 
+
     # Check if model file exist in development stage
     try:
-        models = [str(f).split("/")[-1] for f in list(Path(models_stage["dev"]["path"]).glob("*.pkl"))]
-        # print(models)
+        models = [
+            str(f).rsplit("/", maxsplit=1)[-1]
+            for f in list(Path(models_stage["dev"]["path"]).glob("*.pkl"))
+        ]
+
         if not search_model_ in models:
-            raise ValueError(f"`{search_model_}` model does not exists! Please run model_dev.py script.")
+            raise ValueError(
+                f"`{search_model_}` model does not exists! Please run model_dev.py script."
+            )
 
     except ValueError as e:
         sys.exit(f"{e}")
@@ -186,7 +189,6 @@ if __name__ == "__main__":
     file_out_ = f"cross_valid_{date_time}.png"
     plot_file_out_ = Path(cross_out_) / file_out_
     plot_cross_valid_score(scores_, plot_file_out_)
-
 
     # print(seed_)
     # print(train_in_)

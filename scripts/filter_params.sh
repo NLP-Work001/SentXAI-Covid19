@@ -3,15 +3,14 @@
 # Constant variables
 # folder="logistic"
 
-if [[ ! $# -eq 2 ]]; then
+if [[ ! $# -eq 1 ]]; then
     echo "USAGE: exactly two args are required!"
     exit 1
 fi
 
-folder="$1"
-model_name="$2"
+model_name="$1"
 
-declare -r path="models/tuned/$folder"
+declare -r path="models/tuned"
 declare -r json_output="${path}/best_params.json"
 
 find_params_score() {
@@ -22,7 +21,6 @@ find_params_score() {
 	for name in "${filter_values[@]}"; do
 		best_params_+=("$(grep "$name" "$1" | sed "s/$name//g" | sed "s/\"//g" | head -1)")
 	done
-
 	# Clean up ngram_range parameter
 	pattern="np\.*[a-z]*[0-9].?\(|\)"
 	best_params_[0]=$(echo "${best_params_[0]}" | grep "ngram_range" | sed -E "s/\(/\[/g" | sed -E "s/\)/\]/g")
@@ -59,13 +57,14 @@ find_params_score() {
 
 # Find the latest optimized parameters file
 readarray -t files < <(find "$path" -maxdepth 1 -name "*.csv")
-
+echo "${files[0]}" | cut -d/ -f3
 if [[ ${#files[@]} -eq 1 ]]; then
 
 	echo "Existing files: ${#files[@]}."
 
 	params_=$(find_params_score ${files[0]} | grep -v "score:")
-	new_file=$(echo "${files[0]}" | cut -d/ -f4)
+	echo ${params_[@]}
+	new_file=$(echo "${files[0]}" | cut -d/ -f3)
 	echo ${params_[@]} | python -m json.tool >$json_output
 	echo $new_file >"${path}/log.txt"
 
