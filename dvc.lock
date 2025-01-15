@@ -10,31 +10,29 @@ stages:
       nfiles: 2
     - path: src/process.py
       hash: md5
-      md5: 90cf698976a64a85dcf9566221ac32d6
-      size: 7032
-      isexec: true
+      md5: 32cd16860e1d24a58ded1d45c8616fe0
+      size: 6835
     params:
       config.yml:
-        data.processed.data_size: 2000
+        data.processed.data_size: 0
     outs:
     - path: data/processed
       hash: md5
-      md5: 437fe4861aa9dfb5d3661ddfe2644b52.dir
-      size: 617353
+      md5: 35abc28daafb73326e98abda0974ccf5.dir
+      size: 14011442
       nfiles: 1
   split:
     cmd: python src/split.py data/processed data/split
     deps:
     - path: data/processed
       hash: md5
-      md5: 437fe4861aa9dfb5d3661ddfe2644b52.dir
-      size: 617353
+      md5: 35abc28daafb73326e98abda0974ccf5.dir
+      size: 14011442
       nfiles: 1
     - path: src/split.py
       hash: md5
       md5: 23253844d4f2105981ad63eb3d4a7560
       size: 1979
-      isexec: true
     params:
       config.yml:
         data.split.ratio: 0.25
@@ -42,30 +40,29 @@ stages:
     outs:
     - path: data/split
       hash: md5
-      md5: a3b67b8a7c5035b1ce4bb8484525c195.dir
-      size: 207095
+      md5: 561e5d815fa24136cd9a567e7e0596fd.dir
+      size: 4708555
       nfiles: 3
   eda:
     cmd: python src/ed_analytics.py data/processed ed-analytics/
     deps:
     - path: data/processed
       hash: md5
-      md5: 437fe4861aa9dfb5d3661ddfe2644b52.dir
-      size: 617353
+      md5: 35abc28daafb73326e98abda0974ccf5.dir
+      size: 14011442
       nfiles: 1
     - path: src/ed_analytics.py
       hash: md5
       md5: 7718abb0bf823b7559b844d77e28261a
       size: 4143
-      isexec: true
     params:
       config.yml:
-        data.processed.data_size: 2000
+        data.processed.data_size: 0
     outs:
     - path: ed-analytics/
       hash: md5
-      md5: 1b23b76e64598db7f92ad950570adfff.dir
-      size: 96889
+      md5: f15ae142683b57d8686fc1c42d5bdac2.dir
+      size: 97146
       nfiles: 3
   dev:
     cmd: python src/model_dev.py models/central/
@@ -98,8 +95,8 @@ stages:
     outs:
     - path: models/trained/
       hash: md5
-      md5: 4810126025a2579dce216924eedc043f.dir
-      size: 402686
+      md5: f80c0bff98554702ea783a13286fc4e9.dir
+      size: 404435
       nfiles: 6
   cross_valid:
     cmd: ./scripts/run_model_script.sh model_cross_valid.py models/cross_valid/
@@ -116,16 +113,16 @@ stages:
     outs:
     - path: models/cross_valid/
       hash: md5
-      md5: b0625233674101225d6ea3c90730a746.dir
-      size: 16094
+      md5: 424a66ee830905f9b6197de2d983481b.dir
+      size: 16101
       nfiles: 2
   hyper_tuner:
     cmd: ./scripts/run_model_script.sh hyper_tuner.py models/tuned/
     deps:
     - path: data/split
       hash: md5
-      md5: a3b67b8a7c5035b1ce4bb8484525c195.dir
-      size: 207095
+      md5: 561e5d815fa24136cd9a567e7e0596fd.dir
+      size: 4708555
       nfiles: 3
     - path: scripts/run_model_script.sh
       hash: md5
@@ -139,6 +136,6 @@ stages:
     outs:
     - path: models/tuned/
       hash: md5
-      md5: f6d77ff9dc7a926c056c821a4497043b.dir
-      size: 15962
+      md5: 4d16e5a116ac0fad7abc4bbc70e9360b.dir
+      size: 15216
       nfiles: 1

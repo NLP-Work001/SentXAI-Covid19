@@ -155,7 +155,7 @@ def __preprocessing(path: str, data_size=None) -> pd.DataFrame:
     # Loading complete data file
     # ToDo: remove head for full data processing
     # TODO: Uncomment for faster testing
-    if data_size is None:
+    if data_size is None or data_size == 0:
         data = __reading_file(path)
         # sys.exit("Data Size is not none.")
     else:

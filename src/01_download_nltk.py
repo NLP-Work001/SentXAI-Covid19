@@ -1,6 +1,5 @@
 import nltk
 
-Download NLTK resources
 nltk.download("popular", quiet=True)
 nltk.download("punkt_tab", quiet=True)
 nltk.download("averaged_perceptron_tagger_eng", quiet=True)

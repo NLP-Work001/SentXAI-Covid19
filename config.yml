@@ -6,7 +6,7 @@ data:
   raw:
     path: data/raw/covid-19-tweets
   processed:
-    data_size: 2000
+    data_size: 0 # Full data size -> 0
     path: data/processed
     file: processed_tweets.csv
   split:
