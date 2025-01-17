@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
+sys.path.append(str("src/helpers"))
 from utils import load_parameters
 
 

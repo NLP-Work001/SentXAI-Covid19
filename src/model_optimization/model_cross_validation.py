@@ -15,7 +15,7 @@ from sklearn.base import BaseEstimator
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from tqdm import tqdm
-
+sys.path.append(str("src/helpers"))
 from utils import (
     calculate_metric_score,
     cross_valid_mean_score,
@@ -24,6 +24,7 @@ from utils import (
     model_pipeline,
 )
 
+from helpers import create_model_comparison_plots
 
 # Barplots for metric comparisons
 def plot_cross_valid_score(scores: dict, out_path: str, img_pixel=100) -> None:
@@ -87,8 +88,7 @@ def cross_valid_iteration(
 
     train_scores = []
     val_scores = []
-    time_start = time.time()
-    time_lapsed = None
+
 
     for idx, (train_idx, val_idx) in tqdm(enumerate(cv.split(x, y_all))):
         print(" Iteration Count:", idx + 1)
@@ -102,16 +102,11 @@ def cross_valid_iteration(
 
         train_scores.append(train_score)
         val_scores.append(val_score)
-        time_lapsed = time.time() - time_start
-
-    # Training time-lapsed
-    seconds = np.round(time_lapsed)
-    total_time = str(timedelta(seconds=seconds))
 
     # Cross-validated metric scores
     training_score = cross_valid_mean_score(train_scores)
     validation_score = cross_valid_mean_score(val_scores, "val")
-    metric_scores = {"time_lapsed": total_time, **training_score, **validation_score}
+    metric_scores = {**training_score, **validation_score}
 
     return metric_scores
 
@@ -143,7 +138,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out", help="Output model directory")
     args = parser.parse_args()
 
-    date_time = date_time_record(args.date)
+    # date_time = date_time_record(args.date)
     cross_out_ = args.out
     os.makedirs(cross_out_, exist_ok=True)
     print(cross_out_)
@@ -181,15 +176,15 @@ if __name__ == "__main__":
     # print(file_out_)
 
     scores_ = cross_valid_iteration(clf, x_all_, y_all_, num_split_, seed_)
-    score_out_ = Path(cross_out_) / f"metrics_{date_time}.json"
+    score_out_ = Path(cross_out_) / f"metric_scores.json"
 
     with open(score_out_, "w", encoding="utf-8") as f:
         json.dump(scores_, f, ensure_ascii=False, indent=4)
 
-    file_out_ = f"cross_valid_{date_time}.png"
-    plot_file_out_ = Path(cross_out_) / file_out_
+    plot_file_out_ = Path(cross_out_) / f"cv_scores_plot.png"
     plot_cross_valid_score(scores_, plot_file_out_)
-
+    print(scores_)
+    create_model_comparison_plots(scores_, plot_file_out_)
     # print(seed_)
     # print(train_in_)
     # print(cv_path_out_)

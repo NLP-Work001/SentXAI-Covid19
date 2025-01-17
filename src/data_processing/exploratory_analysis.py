@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-
+sys.path.append(str("src/helpers"))
 from utils import load_parameters
 
 warnings.filterwarnings("ignore")
@@ -119,7 +119,7 @@ def plot_label_distr(df: pd.DataFrame, file_out: str, palette="colorblind") -> N
 
 def main() -> None:
     print("Started analysis ...")
-    params_loader = load_parameters("config.yml")
+    params_loader = load_parameters("configs.yml")
 
     parent_ = params_loader["data"]
     file_in_ = Path(sys.argv[1]) / parent_["processed"]["file"]

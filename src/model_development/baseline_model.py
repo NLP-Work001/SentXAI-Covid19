@@ -7,6 +7,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import MultinomialNB
+sys.path.append(str("src/helpers"))
 from utils import load_parameters
 
 def main() -> None:

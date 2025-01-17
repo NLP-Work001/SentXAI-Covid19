@@ -10,9 +10,9 @@ import pandas as pd
 from nltk import word_tokenize
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
+sys.path.append(str("src/helpers"))
 
 from utils import load_parameters
-
 warnings.filterwarnings("ignore")
 
 # Loading data method

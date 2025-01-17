@@ -32,7 +32,7 @@ class ModelEvaluator:
         else:
             return "EXIT: Model score does not meet initial selection criteria.", False
 
-def create_model_comparison_plots(model_results: dict) -> None:
+def create_model_comparison_plots(model_results: dict, path_out: str) -> None:
     """
     Creates bar plots to compare performance metrics across different models."""
 
@@ -51,7 +51,8 @@ def create_model_comparison_plots(model_results: dict) -> None:
         axes[i].set_xlabel("Fold")
 
     plt.tight_layout()
-    plt.show()
+    fig.savefig(path_out, dpi=250)
+    # plt.show()
 
 
 # USAGE:
