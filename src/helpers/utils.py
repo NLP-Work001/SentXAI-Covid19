@@ -23,16 +23,19 @@ def word_processor(doc: str):
 
 
 # Calculate model metrics and output as a dictionary of those metrics
-def calculate_metric_score(
-    model: BaseEstimator, x_values: pd.DataFrame, y_true: list
-) -> dict:
+from sklearn.metrics import f1_score, roc_auc_score
+import numpy as np
+import pandas as pd
 
-    f1 = f1_score(y_true, model.predict(x_values), average="weighted")
-    roc_auc = roc_auc_score(
-        y_true, model.predict_proba(x_values), average="weighted", multi_class="ovo"
-    )
+def calculate_model_metrics(model, X, y_true):
+    """Calculates and returns a dictionary of model metrics."""
+    y_pred = model.predict(X)
+    y_prob = model.predict_proba(X)
 
-    metrics = {"f1": np.round(f1, 2), "roc_auc": np.round(roc_auc, 2)}
+    f1 = f1_score(y_true, y_pred, average="weighted")
+    roc_auc = roc_auc_score(y_true, y_prob, average="weighted", multi_class="ovo")
+
+    metrics = {"f1": np.round(f1, 3), "roc_auc": np.round(roc_auc, 3)}
     return metrics
 
 
