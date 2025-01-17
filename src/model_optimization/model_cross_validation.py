@@ -104,9 +104,9 @@ def cross_valid_iteration(
         val_scores.append(val_score)
 
     # Cross-validated metric scores
-    training_score = cross_valid_mean_score(train_scores)
-    validation_score = cross_valid_mean_score(val_scores, "val")
-    metric_scores = {**training_score, **validation_score}
+    training_score = np.mean(train_scores, axis=0)
+    validation_score = np.mean(val_scores, axis=0)
+    metric_scores = {"train": training_score, "valid": validation_score}
 
     return metric_scores
 
