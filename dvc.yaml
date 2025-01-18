@@ -1,71 +1,69 @@
 stages:
   process:
-    cmd: python src/process.py data/raw/covid-19-tweets data/processed/processed_tweets.csv
+    cmd: python src/data_processing/data_preprocessing.py data/raw data/processed
     deps:
     - data/raw/covid-19-tweets
-    - src/process.py
+    - src/data_processing/data_preprocessing.py
     params:
-    - config.yml:
+    - configs.yml:
       - data.processed.data_size
     outs:
     - data/processed
-  split:
-    cmd: python src/split.py data/processed data/split
+  data_analysis:
+    cmd: python src/data_processing/exploratory_analysis.py data/processed data/analytics
     deps:
     - data/processed
-    - src/split.py
+    - src/data_processing/exploratory_analysis.py
+    outs:
+    - data/analytics
+  data_split:
+    cmd: python src/data_processing/data_splitting.py data/processed data/split
+    deps:
+    - data/processed
+    - src/data_processing/data_splitting.py
     params:
-    - config.yml:
+    - configs.yml:
       - data.split.ratio
       - data.split.seed
     outs:
     - data/split
-  eda:
-    cmd: python src/ed_analytics.py data/processed ed-analytics/
+  baseline_model:
+    cmd: python src/model_development/baseline_model.py src/model_checkpoints/baselines
     deps:
-    - data/processed
-    - src/ed_analytics.py
+    - src/model_development/baseline_model.py
     params:
-    - config.yml:
-      - data.processed.data_size
-    outs:
-    - ed-analytics/
-  dev:
-    cmd: python src/model_dev.py models/central/
-    deps:
-    - src/model_dev.py
-    params:
-    - config.yml:
+    - configs.yml:
       - models.seed
     outs:
-    - models/central/
-  train:
-    cmd: ./scripts/run_model_script.sh model_train.py models/trained/
-    deps:
-    - scripts/run_model_script.sh
-    params:
-    - config.yml:
-      - models.train.model
-    outs:
-    - models/trained/
-  cross_valid:
-    cmd: ./scripts/run_model_script.sh model_cross_valid.py models/cross_valid/
-    deps:
-    - scripts/run_model_script.sh
-    params:
-    - config.yml:
-      - models.cross_validation.model
-      - models.cross_validation.n_splits
-    outs:
-    - models/cross_valid/
-  hyper_tuner:
-    cmd: ./scripts/run_model_script.sh hyper_tuner.py models/tuned/
+    - src/model_checkpoints/baselines
+  training:
+    cmd: python src/model_development/model_training.py data/split src/model_checkpoints/trained
     deps:
     - data/split
-    - scripts/run_model_script.sh
+    - src/model_development/model_training.py
     params:
-    - config.yml:
-      - models.fine_tune.model
-      - models.fine_tune.n_splits
+    - configs.yml:
+      - models.train.model
     outs:
-    - models/tuned/
+    - src/model_checkpoints/trained
+  cross_validation:
+    cmd: python src/model_optimization/cross_validation.py data/split src/model_checkpoints/cross_valid
+    deps:
+    - data/split
+    - src/model_optimization/cross_validation.py
+    params:
+    - configs.yml:
+      - models.cross_validation.model
+      - models.cross_validation.n_split
+    outs:
+    - src/model_checkpoints/cross_valid
+  hyper_optimizer:
+    cmd: python src/model_optimization/hyper_opt.py data/split
+    deps:
+    - data/split
+    - src/model_optimization/hyper_opt.py
+    params:
+    - configs.yml:
+      - models.train.optimize
+    outs:
+    - src/model_checkpoints/tuned

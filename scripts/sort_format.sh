@@ -14,6 +14,7 @@ if [[ ! -e "$file_name" ]]; then
 	exit
 fi
 
+black "$file_name"
 isort format "$file_name"
 ruff format "$file_name"
 

@@ -1,0 +1,1 @@
+print("Run this python script in main ...")

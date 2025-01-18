@@ -1,49 +1,46 @@
----
 Project: Covid-19 tweets Classification (NLP)
-
-# Data Paths
 data:
-  raw:
-    path: data/raw/covid-19-tweets
   processed:
-    data_size: 0 # Full data size -> 0
-    path: data/processed
+    data_size: 2000
     file: processed_tweets.csv
+  raw:
+    file: covid-19-tweets
   split:
-    path: data/split
+    files:
+    - train.csv
+    - test.csv
     ratio: 0.25
     seed: 42
-    files:
-      - train.csv
-      - test.csv
-
 eda:
-    path: ed-analytics/
-
-# Model Directories
+  path: ed-analytics/
 models:
-  seed: 43
-  dev:
-    path: models/central/
+  baseline:
     file: model.pkl
-
-  train:
-    path: trained/
-    model: logistic
-    encoder: label_encoder.pkl
-    metrics: metrics.json
-
-  retrain:
-    path: retrained/
-    encoder: label_encoder
-    metrics: metrics.json
-
+    path: baselines
   cross_validation:
     model: logistic
-    n_splits: 5
+    n_split: 10
     path: cross_valid/
-
-  fine_tune:
+    seed: 43
+  hyper_tuner:
+    method: grid
+    num_split: 5
+    path: src/model_checkpoints/tuned
+    scoring_metrics:
+    - f1_weighted
+    - roc_auc_ovo
+    seed: 43
+    selected_cols:
+    - params
+    - mean_test_f1_weighted
+    - mean_test_roc_auc_ovo
+    - rank_test_roc_auc_ovo
+    shuffle: true
+  path: src/model_checkpoints
+  seed: 43
+  train:
+    encoder: label_encoder.pkl
+    metrics: metrics.json
     model: logistic
-    n_splits: 3
-    path: tuned/
+    optimize: true
+    path: trained/
