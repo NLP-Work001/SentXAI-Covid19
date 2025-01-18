@@ -3,7 +3,7 @@
 # Constant variables
 # folder="logistic"
 
-if [[ ! $# -eq 1 ]]; then
+if [[ ! $# -eq 2 ]]; then
     echo "USAGE: exactly two args are required!"
     exit 1
 fi
@@ -57,44 +57,14 @@ find_params_score() {
 # Find the latest optimized parameters file
 readarray -t files < <(find "$path" -maxdepth 1 -name "*.csv")
 echo "${files[0]}" | cut -d/ -f3
-if [[ ${#files[@]} -eq 1 ]]; then
+if [[ ! ${#files[@]} -eq 0 ]]; then
 
-	echo "Existing files: ${#files[@]}."
-
+	echo "Folder is not empty: ${#files[@]}."
+	echo "$params_"
 	params_=$(find_params_score ${files[0]} | grep -v "score:")
-	echo ${params_[@]}
-	new_file=$(echo "${files[0]}" | cut -d/ -f3)
+	# new_file=$(echo "${files[0]}" | cut -d/ -f3)
 	echo ${params_[@]} | python -m json.tool >$json_output
-	echo $new_file >"${path}/log.txt"
-
-elif [[ ${#files[@]} -gt 1 ]]; then
-
-	echo "Existing files: ${#files[@]}."
-
-	match_latest_file=$(find "$path" -maxdepth 1 -name "*.csv" | grep -E -o "[0-9].*" | sort -r | head -1)
-	latest_file=$(find "$path" -maxdepth 1 -name "*$match_latest_file*" | cut -d/ -f4)
-	date_time=$(echo $latest_file | cut -d_ -f3-4 | cut -d\. -f1)
-
-	old_file=$(cat "${path}/log.txt")
-
-	old_score=$(find_params_score "$path/$old_file" | grep -E "score:" | cut -d: -f2)
-	new_score=$(find_params_score "$path/$latest_file" | grep -E "score:" | cut -d: -f2)
-
-	old_params_=$(find_params_score "$path/$old_file" | grep -v "score:")
-	new_params_=$(find_params_score "$path/$latest_file" | grep -v "score:")
-
-	echo "Old score: $old_score, new_score: $new_score"
-
-	if (($(echo "$new_score > $old_score" | bc -l))); then
-		echo "Update log file."
-		echo ${new_params_[@]} | python -m json.tool >$json_output
-		echo $latest_file >"${path}/log.txt"
-
-	elif (($(echo "$new_score <= $old_score" | bc -l))); then
-		echo "Exit the process and keep old score."
-		exit
-	fi
-
+	# echo $new_file >"${path}/log.txt"
 else
 	echo "There are not existing *.csv files."
 	exit

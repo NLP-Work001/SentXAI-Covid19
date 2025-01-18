@@ -1,25 +1,34 @@
 import json
 import os
-from argparse import ArgumentParser
-import pandas as pd
-import joblib
-from sklearn.base import BaseEstimator
-from sklearn.preprocessing import LabelBinarizer
-from pathlib import Path
-import numpy as np
-from sklearn.metrics import auc, roc_curve, classification_report
-from sklearn.metrics import multilabel_confusion_matrix, ConfusionMatrixDisplay
 import sys
+from argparse import ArgumentParser
+from pathlib import Path
+
+import joblib
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    auc,
+    classification_report,
+    multilabel_confusion_matrix,
+    roc_curve,
+)
+from sklearn.preprocessing import LabelBinarizer
+
 sys.path.append(str("src/helpers"))
 
 from utils import (
-    calculate_metric_score,
-    load_parameters,
+    calculate_model_metrics,
+    date_time_record,
     get_output_label,
     model_pipeline,
-    date_time_record
 )
+
+from helpers import config_loader, create_model_comparison_plots
+
 
 # Plot confusion matrix for multiclasses
 def plot_multilabel_cm(
@@ -27,9 +36,8 @@ def plot_multilabel_cm(
     encoding: LabelBinarizer,
     y_true_: np.matrix,
     x_test_: pd.DataFrame,
-    out_: str
+    out_: str,
 ) -> None:
-
     # Compute multilabel confusion matrix
     y_scores = model.predict(x_test_)
     mcm = multilabel_confusion_matrix(y_true_.argmax(axis=1), y_scores)
@@ -38,7 +46,9 @@ def plot_multilabel_cm(
     fig, axes = plt.subplots(1, len(mcm), figsize=(15, 5))
     for i, matrix in enumerate(mcm):
         label = get_output_label(encoding, i)
-        disp = ConfusionMatrixDisplay(confusion_matrix=matrix, display_labels=[f"Not {label}", label])
+        disp = ConfusionMatrixDisplay(
+            confusion_matrix=matrix, display_labels=[f"Not {label}", label]
+        )
         disp.plot(ax=axes[i], cmap=plt.cm.Blues, colorbar=False)
         axes[i].set_title(f"Confusion matrix for '{label}'")
         axes[i].grid(False)
@@ -47,6 +57,7 @@ def plot_multilabel_cm(
 
     path_out = Path(out_) / "confusion_matric_plot.png"
     fig.savefig(path_out, dpi=250)
+
 
 # Plot ROC curve and ROC area
 def plot_roc_auc_curve(
@@ -86,15 +97,13 @@ def plot_roc_auc_curve(
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
 
-    model_name = (
-        list(model.named_steps.values())[-1]
-        .__class__.__name__.lower()
-    )
+    model_name = list(model.named_steps.values())[-1].__class__.__name__.lower()
 
     plt.title(f"Roc Curve for {model_name}.")
     plt.legend(loc="lower right")
 
-    fig.savefig(Path(out_) / f"roc_auc_curve.png", dpi=dpi)
+    fig.savefig(Path(out_) / "roc_auc_curve.png", dpi=dpi)
+
 
 # Access optimized model parameters
 def _tune_params_loader(path: str) -> dict:
@@ -109,18 +118,24 @@ def _tune_params_loader(path: str) -> dict:
             key: tuple(value) if isinstance(value, list) else value
             for key, value in j["params"].items()
         }
+    params_["model"] = data["model"]["params"]
 
     return params_
 
 
-def _training(baseline_model: BaseEstimator, train_in_: str, test_in_: str, out_: dict) -> None:
+def _training(
+    baseline_model: BaseEstimator,
+    train_file_path_: str,
+    test_file_path_: str,
+    out_: dict,
+) -> None:
     # Load training & testing dataset
 
-    _train = pd.read_csv(train_in_)
+    _train = pd.read_csv(train_file_path_)
     x_train_ = _train[["text"]]
     y_train_ = _train["sentiment"]
 
-    _test = pd.read_csv(test_in_)
+    _test = pd.read_csv(test_file_path_)
     x_test_ = _test[["text"]]
     y_test_ = _test["sentiment"]
 
@@ -133,13 +148,14 @@ def _training(baseline_model: BaseEstimator, train_in_: str, test_in_: str, out_
 
     # training model
     joblib.dump(binarizer, out_["encoder"])
+    model = None
+    if out_["retrain"]:       
+        model = model_pipeline(baseline_model, out_["ngram_range"],  out_["norm"]).fit(x_train_, y_train_.argmax(axis=1))
+    else:
+        model = model_pipeline(baseline_model).fit(x_train_, y_train_.argmax(axis=1))
 
-    model = model_pipeline(baseline_model).fit(
-        x_train_, y_train_.argmax(axis=1)
-    )
-
-    train_scores = calculate_metric_score(model, x_train_, y_train_.argmax(axis=1))
-    test_scores = calculate_metric_score(model, x_test_, y_test_.argmax(axis=1))
+    train_scores = calculate_model_metrics(model, x_train_, y_train_.argmax(axis=1))
+    test_scores = calculate_model_metrics(model, x_test_, y_test_.argmax(axis=1))
 
     # Log model artifacts
     scores = {"train": train_scores, "test": test_scores}
@@ -151,80 +167,93 @@ def _training(baseline_model: BaseEstimator, train_in_: str, test_in_: str, out_
     labels_ = np.unique(binarizer.inverse_transform(y_test_))
     plot_roc_auc_curve(model, binarizer, y_test_, x_test_, out_["plot_out"])
     plot_multilabel_cm(model, binarizer, y_test_, x_test_, out_["plot_out"])
-    
+    create_model_comparison_plots(scores, Path(out_["plot_out"]) / "metrics_plots.png")
+
     # Log classification report
     y_pred = model.predict(x_test_)
-    report = classification_report(y_test_.argmax(axis=1), y_pred, target_names=labels_ ,  output_dict=True)
+    report = classification_report(
+        y_test_.argmax(axis=1), y_pred, target_names=labels_, output_dict=True
+    )
     report_df = pd.DataFrame(report).transpose()
 
     report_df.to_csv(Path(out_["path"]) / "classification_report.csv", index=True)
-
-    print("Training Scores: ", train_scores)
-    print("Testing Scores: ", test_scores)
 
 
 def main() -> None:
     print("Started training ...")
 
-    # command-Line arguments
-    parser = ArgumentParser()
-    parser.add_argument("-d", "--date", help="Recorded date during runtime execution.")
-    parser.add_argument("-o", "--out", help="Output model directory")
-    args = parser.parse_args()
-
     # ToDo: WriteUp retraing logic before connecting MLflow and DagsHUB
     # ToDo: Add Jenkins and Github Actions operations
-    model_output_folder_ = args.out
+    training_in_ = sys.argv[1]
+    training_out_ = sys.argv[2]
+    os.makedirs(training_out_, exist_ok=True)
 
-    os.makedirs(model_output_folder_, exist_ok=True)
     # Load configs file
-    params_loader = load_parameters("configs.yml")
+    params_loader = config_loader("configs.yml")
 
     # Reading data file
-    parent_split_ = params_loader["data"]
-    path_split_ = parent_split_["split"]
-    path_in_ = path_split_["path"]
-    train_in_ = Path(path_in_) / path_split_["files"][0]
-    test_in_ = Path(path_in_) / path_split_["files"][1]
+    files_path_ = params_loader["data"]["split"]
+    train_file_path_ = Path(training_in_) / files_path_["files"][0]
+    test_file_path_ = Path(training_in_) / files_path_["files"][1]
 
     # Train utils
-    train_dev_ = params_loader["models"]
-    # train_path_ = train_dev_["train"]["path"]
-    model_name_ = train_dev_["train"]["model"]
-    encoder_file_ = train_dev_["train"]["encoder"]
-    metrics_file_ = train_dev_["train"]["metrics"]
+    trained_param = params_loader["models"]["train"]
+    model_name_ = trained_param["model"]
+    encoder_file_ = trained_param["encoder"]
+    metrics_file_ = trained_param["metrics"]
 
     # Setup output files
-    model_out_ = train_dev_["dev"]["path"]
+    baseline_path_ = (
+        Path(params_loader["models"]["path"])
+        / params_loader["models"]["baseline"]["path"]
+    )
     search_model_ = f"{model_name_}_model.pkl"
-   
-   # Check if model file exist in development stage
+
+    # Check if model file exist in development stage
     try:
-        models = [str(f).split("/")[-1] for f in list(Path(model_out_).glob("*.pkl"))]
-        # print(models)
+        models = [
+            str(f).split("/")[-1] for f in list(Path(baseline_path_).glob("*.pkl"))
+        ]
+
         if not search_model_ in models:
-            raise ValueError(f"`{search_model_}` model does not exists! Please run model_dev.py script.")
+            raise ValueError(
+                f"`{search_model_}` model does not exists! Please run model_dev.py script."
+            )
 
     except ValueError as e:
         sys.exit(f"{e}")
 
     # Setup Files output
-    encoder_file_out_ = Path(model_output_folder_) / encoder_file_
-    metrics_file_out_ = Path(model_output_folder_) / metrics_file_
-    output_model_file_ =  Path(model_output_folder_) / "model.pkl"
+    encoder_file_out_ = Path(training_out_) / encoder_file_
+    metrics_file_out_ = Path(training_out_) / metrics_file_
+    output_model_file_ = Path(training_out_) / "model.pkl"
 
     out_ = {
-        "path": model_output_folder_,
-        "model":  output_model_file_,
+        "path": training_out_,
+        "model": output_model_file_,
         "metric": metrics_file_out_,
         "encoder": encoder_file_out_,
-        "plot_out":  Path(model_output_folder_),
+        "plot_out": Path(training_out_),
+        "retrain": False
     }
 
     # Model training
-    model = joblib.load(Path(model_out_) / search_model_)
+    model = joblib.load(Path(baseline_path_) / search_model_)
 
-    _training(model, train_in_, test_in_, out_)
+    # Get optimized parameters
+    best_params = _tune_params_loader("src/model_checkpoints/tuned")
+    model_params_ = best_params["model"]
+    vect_params_ = best_params["vectorizer"]
+
+    print("Show ouput: ", trained_param["optimize"])
+    if trained_param["optimize"]:
+        print("Model retraining ...")
+        out_["ngram_range"] = vect_params_["ngram_range"]
+        out_["norm"] = vect_params_["norm"]
+        out_["retrain"] = True
+        model.set_params(**model_params_)
+        
+    _training(model, train_file_path_, test_file_path_, out_)
 
 
 if __name__ == "__main__":

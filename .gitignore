@@ -19,3 +19,4 @@ ed-analytics/
 *gsheet
 *.gsheet
 *.xlsx
+src/model_checkpoints/

@@ -1,7 +1,0 @@
-{
-    "time_lapsed": "0:00:39",
-    "train_f1": 0.85,
-    "train_roc_auc": 0.95,
-    "val_f1": 0.72,
-    "val_roc_auc": 0.87
-}

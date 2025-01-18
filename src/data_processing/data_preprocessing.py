@@ -191,31 +191,27 @@ def __preprocessing(path: str, data_size=None) -> pd.DataFrame:
 def main() -> None:
     print("Started preprocessing ...")
     # Processed DataSet
-    params_loader = load_parameters("config.yml")
+    params_loader = load_parameters("configs.yml")
 
-    parent_ = params_loader["data"]
-    data_size = parent_["processed"]["data_size"]
+    data_dir = params_loader["data"]
+    data_size = data_dir["processed"]["data_size"]
 
     print(data_size)
     # Command-line args
-    file_in_dir_ = sys.argv[1]
-    file_out_ = sys.argv[2]
+    raw_path_ = f"{sys.argv[1]}/{data_dir["raw"]["file"]}"
+    processed_path_ = f"{sys.argv[2]}/{data_dir["processed"]["file"]}"
 
-    folder_out_ = Path(file_out_).parent
-    os.makedirs(folder_out_, exist_ok=True)
+    os.makedirs(sys.argv[2], exist_ok=True)
 
-    print("Parent output folder: ", folder_out_)
+    print("Parent output folder: ", sys.argv[2])
 
     try:
         # Raise custom exception only if the folder has no csv files.
-        if not list(Path(file_in_dir_).glob("*.csv")):
-            raise ValueError(f"There is no `csv` file in `{file_in_dir_}`.")
-
-        # print(list(path_in_.glob("*.csv")))
-        # print(file_out_)
-
-        df = __preprocessing(Path(file_in_dir_), data_size)
-        df.to_csv(file_out_, index=False)
+        if not list(Path(raw_path_).glob("*.csv")):
+            raise ValueError(f"There is no `csv` file in `{raw_path_}`.")
+        
+        df = __preprocessing(Path(raw_path_), data_size)
+        df.to_csv(processed_path_, index=False)
         print("Process completed!")
     except ValueError as e:
         print(f"{e}")

@@ -124,20 +124,16 @@ def main() -> None:
     parent_ = params_loader["data"]
     file_in_ = Path(sys.argv[1]) / parent_["processed"]["file"]
 
-    path_out_ = sys.argv[2]
-    os.makedirs(path_out_, exist_ok=True)
+    output_path_ = sys.argv[2]
+    os.makedirs(output_path_, exist_ok=True)
 
     # Reading file
     dataframe = reading_file(file_in_)
-    # file_out_ = Path(path_out_) / f"plot_name_{dataframe.shape[0]}.png"
-
-    # print(file_in_)
-    # print(file_out_)
 
     # Log plots
-    plot_label_distr(dataframe, path_out_)
-    plot_sentence_token_length(dataframe, path_out_)
-    plot_word_frequency(dataframe, path_out_)
+    plot_label_distr(dataframe, output_path_)
+    plot_sentence_token_length(dataframe, output_path_)
+    plot_word_frequency(dataframe, output_path_)
 
     print("Completed!")
 

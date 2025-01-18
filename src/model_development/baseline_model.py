@@ -9,17 +9,15 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import MultinomialNB
 sys.path.append(str("src/helpers"))
 from utils import load_parameters
+from helpers import config_loader
 
 def main() -> None:
 
     # File paths
-    parent_ = load_parameters("config.yml")
-    dev_ = parent_["models"]["dev"]
+    parent_ = config_loader("configs.yml")
+    file_name_ = parent_["models"]["baseline"]["file"]
     seed_ = parent_["models"]["seed"]
-    file_out_ = dev_["file"]
-    path_out_ = sys.argv[1]
-    os.makedirs(path_out_, exist_ok=True)
-    
+    os.makedirs(sys.argv[1], exist_ok=True)
     
     # Collection of all models
     models = {
@@ -32,10 +30,10 @@ def main() -> None:
 
     # Save models into pickle files
     for name, model in models.items():
-        out_ = Path(path_out_) / f"{name}_{file_out_}"
+        out_ = Path(sys.argv[1]) / f"{name}_{file_name_}"
         with open(out_, "wb") as f:
             joblib.dump(model, f)
-            print(f"{name} model has been saved into {path_out_}.")
+            print(f"{name} model has been saved into {file_name_}.")
 
 if __name__ == "__main__":
     main()
