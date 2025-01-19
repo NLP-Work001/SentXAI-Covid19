@@ -240,13 +240,16 @@ def main() -> None:
     # Model training
     model = joblib.load(Path(baseline_path_) / search_model_)
 
-    # Get optimized parameters
-    best_params = _tune_params_loader("src/model_checkpoints/tuned")
-    model_params_ = best_params["model"]
-    vect_params_ = best_params["vectorizer"]
 
     print("Show ouput: ", trained_param["optimize"])
-    if trained_param["optimize"]:
+    best_params_path_ = Path("src/model_checkpoints/tuned")
+    if trained_param["optimize"] and best_params_path_.is_dir():
+        # Get optimized parameters
+        
+        best_params = _tune_params_loader(best_params_path_)
+        model_params_ = best_params["model"]
+        vect_params_ = best_params["vectorizer"]
+
         print("Model retraining ...")
         out_["ngram_range"] = vect_params_["ngram_range"]
         out_["norm"] = vect_params_["norm"]

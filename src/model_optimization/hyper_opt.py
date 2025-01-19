@@ -73,7 +73,7 @@ def hyper_optimizer(
             param_grid=params_,
             cv=kflod_cv,
             scoring=scoring_metrics,
-            refit=scoring_metrics[1],
+            refit=scoring_metrics[0],
             verbose=1,
             n_jobs=-1,
         ).fit(x, y)

@@ -10,50 +10,47 @@ stages:
       nfiles: 2
     - path: src/data_processing/data_preprocessing.py
       hash: md5
-      md5: 3e407656f2cdbd3403979fa66d6b520e
+      md5: 2ac9581481955aef292e951525d0c2a4
       size: 6830
-      isexec: true
     params:
       configs.yml:
-        data.processed.data_size: 2000
+        data.processed.data_size: 5000
     outs:
     - path: data/processed
       hash: md5
-      md5: 52c12f64eea75ec066627632c4d4652d.dir
-      size: 619547
+      md5: d8361cb1d2b109c9a23137a1d8063892.dir
+      size: 1557975
       nfiles: 1
   data_analysis:
     cmd: python src/data_processing/exploratory_analysis.py data/processed data/analytics
     deps:
     - path: data/processed
       hash: md5
-      md5: 52c12f64eea75ec066627632c4d4652d.dir
-      size: 619547
+      md5: d8361cb1d2b109c9a23137a1d8063892.dir
+      size: 1557975
       nfiles: 1
     - path: src/data_processing/exploratory_analysis.py
       hash: md5
       md5: 8698436dc67938f24e6d59edfdd65648
       size: 4070
-      isexec: true
     outs:
     - path: data/analytics
       hash: md5
-      md5: 6b986c71ea31809aae00df0431df1ddf.dir
-      size: 93861
+      md5: 0f96ac9dc8d0c330a13b7520284939d3.dir
+      size: 91698
       nfiles: 3
   data_split:
     cmd: python src/data_processing/data_splitting.py data/processed data/split
     deps:
     - path: data/processed
       hash: md5
-      md5: 52c12f64eea75ec066627632c4d4652d.dir
-      size: 619547
+      md5: d8361cb1d2b109c9a23137a1d8063892.dir
+      size: 1557975
       nfiles: 1
     - path: src/data_processing/data_splitting.py
       hash: md5
       md5: 8d6134f0ae2734e695fc66aa78d1f86c
       size: 1896
-      isexec: true
     params:
       configs.yml:
         data.split.ratio: 0.25
@@ -61,8 +58,8 @@ stages:
     outs:
     - path: data/split
       hash: md5
-      md5: 6767010216476e09c503baac89ab884e.dir
-      size: 207855
+      md5: ca11edf08915315f5de308899bb3a46a.dir
+      size: 524169
       nfiles: 3
   baseline_model:
     cmd: python src/model_development/baseline_model.py src/model_checkpoints/baselines
@@ -71,7 +68,6 @@ stages:
       hash: md5
       md5: 2439f49cfdbf7d0c3c5de1cc7106d846
       size: 1284
-      isexec: true
     params:
       configs.yml:
         models.seed: 43
@@ -86,36 +82,34 @@ stages:
     deps:
     - path: data/split
       hash: md5
-      md5: ac1b0fcdc2b789f46680321ef8d4f300.dir
-      size: 1571379
+      md5: ca11edf08915315f5de308899bb3a46a.dir
+      size: 524169
       nfiles: 3
     - path: src/model_development/model_training.py
       hash: md5
-      md5: e5e05d802e6d08848f8c1845b126259a
-      size: 7965
-      isexec: true
+      md5: 021f999fc3258fcd810cfbe8bcb2eb2a
+      size: 8073
     params:
       configs.yml:
         models.train.model: logistic
     outs:
     - path: src/model_checkpoints/trained
       hash: md5
-      md5: 20615c8a35668ff358052372a9712651.dir
-      size: 1063539
+      md5: b40fee4ced984845f63e68dd7c2160d8.dir
+      size: 687268
       nfiles: 7
   cross_validation:
     cmd: python src/model_optimization/cross_validation.py data/split src/model_checkpoints/cross_valid
     deps:
     - path: data/split
       hash: md5
-      md5: ac1b0fcdc2b789f46680321ef8d4f300.dir
-      size: 1571379
+      md5: ca11edf08915315f5de308899bb3a46a.dir
+      size: 524169
       nfiles: 3
     - path: src/model_optimization/cross_validation.py
       hash: md5
       md5: adb71eb559a6a7322ef1617bba122b16
       size: 5496
-      isexec: true
     params:
       configs.yml:
         models.cross_validation.model: logistic
@@ -123,28 +117,27 @@ stages:
     outs:
     - path: src/model_checkpoints/cross_valid
       hash: md5
-      md5: 9039be003c9e1be85024d64cb5489874.dir
-      size: 95677
+      md5: 194a0f7ada8e847a8642dd1826350aad.dir
+      size: 95792
       nfiles: 2
   hyper_optimizer:
     cmd: python src/model_optimization/hyper_opt.py data/split
     deps:
     - path: data/split
       hash: md5
-      md5: f6d712245b850b4aefb4807067b13fb5.dir
-      size: 1045537
+      md5: ca11edf08915315f5de308899bb3a46a.dir
+      size: 524169
       nfiles: 3
     - path: src/model_optimization/hyper_opt.py
       hash: md5
-      md5: 27fd8c99a2585fe43c7ca675793b3d75
-      size: 4938
-      isexec: true
+      md5: c68b670032eb3c7bf5f103978087c74a
+      size: 4937
     params:
       configs.yml:
         models.train.optimize: false
     outs:
     - path: src/model_checkpoints/tuned
       hash: md5
-      md5: 43a3f07b289dc99297009f1148bd323e.dir
-      size: 16462
+      md5: 041bb9db6decd0e9e85f3065dca372bf.dir
+      size: 15707
       nfiles: 2

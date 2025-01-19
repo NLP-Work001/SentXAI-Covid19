@@ -198,8 +198,8 @@ def main() -> None:
 
     print(data_size)
     # Command-line args
-    raw_path_ = f"{sys.argv[1]}/{data_dir["raw"]["file"]}"
-    processed_path_ = f"{sys.argv[2]}/{data_dir["processed"]["file"]}"
+    raw_path_ = f"{sys.argv[1]}/{data_dir['raw']['file']}"
+    processed_path_ = f"{sys.argv[2]}/{data_dir['processed']['file']}"
 
     os.makedirs(sys.argv[2], exist_ok=True)
 
