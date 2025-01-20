@@ -1,7 +1,7 @@
 Project: Covid-19 tweets Classification (NLP)
 data:
   processed:
-    data_size: 15000
+    data_size: 0
     file: processed_tweets.csv
   raw:
     file: covid-19-tweets
@@ -9,7 +9,7 @@ data:
     files:
     - train.csv
     - test.csv
-    ratio: 0.25
+    ratio: 0.2
     seed: 42
 eda:
   path: ed-analytics/
@@ -40,6 +40,6 @@ models:
   train:
     encoder: label_binarizer.pkl
     metrics: metrics.json
-    model: forest
+    model: tree
     optimize: false
     path: trained/

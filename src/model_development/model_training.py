@@ -197,7 +197,7 @@ def _training(
 def main() -> None:
     print("Started training ...")
     # Set MLflow URI
-    mlflow.set_tracking_uri("http://localhost:5000")
+    # mlflow.set_tracking_uri("http://localhost:5000")
 
     # ToDo: WriteUp retraing logic before connecting MLflow and DagsHUB
     # ToDo: Add Jenkins and Github Actions operations

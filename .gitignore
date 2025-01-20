@@ -21,3 +21,4 @@ ed-analytics/
 src/model_checkpoints/
 mlruns/
 mlartifacts
+config.ini
