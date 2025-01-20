@@ -3,7 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-
+import mlflow 
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +16,7 @@ from sklearn.metrics import (
     multilabel_confusion_matrix,
     roc_curve,
 )
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 
 sys.path.append(str("src/helpers"))
@@ -27,7 +28,7 @@ from utils import (
     model_pipeline,
 )
 
-from helpers import config_loader, create_model_comparison_plots
+from helpers import config_loader, create_model_comparison_plots, MLFlowExperiment
 
 
 # Plot confusion matrix for multiclasses
@@ -131,29 +132,43 @@ def _training(
 ) -> None:
     # Load training & testing dataset
 
-    _train = pd.read_csv(train_file_path_)
-    x_train_ = _train[["text"]]
-    y_train_ = _train["sentiment"]
-
-    _test = pd.read_csv(test_file_path_)
-    x_test_ = _test[["text"]]
-    y_test_ = _test["sentiment"]
-
     # Label Encoding
     binarizer = LabelBinarizer(sparse_output=False)
 
     # label_encoding = LabelEncoder()
-    y_train_ = binarizer.fit_transform(y_train_)
-    y_test_ = binarizer.transform(y_test_)
 
     # training model
-    joblib.dump(binarizer, out_["encoder"])
+
+    _train = pd.read_csv(train_file_path_)
+    _test = pd.read_csv(test_file_path_)
     model = None
-    if out_["retrain"]:       
-        model = model_pipeline(baseline_model, out_["ngram_range"],  out_["norm"]).fit(x_train_, y_train_.argmax(axis=1))
+
+    if out_["retrain"]:
+        x_train_ = _train[["text"]]
+        y_train_ = binarizer.fit_transform(_train["sentiment"])
+
+        x_test_ = _test[["text"]]
+        y_test_ = binarizer.transform(_test["sentiment"])
+        model = model_pipeline(baseline_model, out_["ngram_range"], out_["norm"]).fit(
+            x_train_, y_train_.argmax(axis=1)
+        )
     else:
+        x_data = _train[["text"]]
+        y_data = _train["sentiment"]
+
+        x_train_, x_test_, y_train_, y_test_ = train_test_split(
+            x_data, y_data, test_size=0.2, stratify=y_data
+        )
+        y_train_ = binarizer.fit_transform(y_train_)
+        y_test_ = binarizer.transform(y_test_)
+
         model = model_pipeline(baseline_model).fit(x_train_, y_train_.argmax(axis=1))
 
+    if model is None:
+        print("Model is a none instance.")
+        sys.exit(0)
+
+    joblib.dump(binarizer, out_["encoder"])
     train_scores = calculate_model_metrics(model, x_train_, y_train_.argmax(axis=1))
     test_scores = calculate_model_metrics(model, x_test_, y_test_.argmax(axis=1))
 
@@ -181,6 +196,8 @@ def _training(
 
 def main() -> None:
     print("Started training ...")
+    # Set MLflow URI
+    mlflow.set_tracking_uri("http://localhost:5000")
 
     # ToDo: WriteUp retraing logic before connecting MLflow and DagsHUB
     # ToDo: Add Jenkins and Github Actions operations
@@ -226,7 +243,7 @@ def main() -> None:
     # Setup Files output
     encoder_file_out_ = Path(training_out_) / encoder_file_
     metrics_file_out_ = Path(training_out_) / metrics_file_
-    output_model_file_ = Path(training_out_) / "model.pkl"
+    output_model_file_ = Path(training_out_) / "sk_pipeline.pkl"
 
     out_ = {
         "path": training_out_,
@@ -234,18 +251,17 @@ def main() -> None:
         "metric": metrics_file_out_,
         "encoder": encoder_file_out_,
         "plot_out": Path(training_out_),
-        "retrain": False
+        "retrain": False,
     }
 
     # Model training
     model = joblib.load(Path(baseline_path_) / search_model_)
 
-
     print("Show ouput: ", trained_param["optimize"])
     best_params_path_ = Path("src/model_checkpoints/tuned")
     if trained_param["optimize"] and best_params_path_.is_dir():
         # Get optimized parameters
-        
+
         best_params = _tune_params_loader(best_params_path_)
         model_params_ = best_params["model"]
         vect_params_ = best_params["vectorizer"]
@@ -255,9 +271,13 @@ def main() -> None:
         out_["norm"] = vect_params_["norm"]
         out_["retrain"] = True
         model.set_params(**model_params_)
-        
+
     _training(model, train_file_path_, test_file_path_, out_)
 
+    print("Start logging experiments to mlflow.")
+    data_sample = pd.read_csv(train_file_path_).sample(n=5).reset_index(drop=True)
+    log_exp = MLFlowExperiment(sys.argv[2], sys.argv[1])
+    log_exp.track_model_experiment(data_sample[["text"]])
 
 if __name__ == "__main__":
     main()

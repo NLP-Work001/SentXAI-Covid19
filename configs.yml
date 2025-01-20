@@ -1,7 +1,7 @@
 Project: Covid-19 tweets Classification (NLP)
 data:
   processed:
-    data_size: 5000
+    data_size: 15000
     file: processed_tweets.csv
   raw:
     file: covid-19-tweets
@@ -18,7 +18,6 @@ models:
     file: model.pkl
     path: baselines
   cross_validation:
-    model: logistic
     n_split: 10
     path: cross_valid/
     seed: 43
@@ -39,8 +38,8 @@ models:
   path: src/model_checkpoints
   seed: 43
   train:
-    encoder: label_encoder.pkl
+    encoder: label_binarizer.pkl
     metrics: metrics.json
-    model: logistic
+    model: forest
     optimize: false
     path: trained/

@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-
+import json
 import pandas as pd
 from sklearn.model_selection import train_test_split
 sys.path.append(str("src/helpers"))
@@ -55,11 +55,11 @@ def main() -> None:
     train_size, test_size = data_split(df, train_out_, test_out_, ratio_, seed_)
 
     # Log file sizes
-    file_log = Path(path_out_) / "log.txt"
+    file_log = Path(path_out_) / "data_info.json"
     with open(file_log, "w", encoding="utf-8") as f:
-        f.write(
-            f"Data row-size: {df.shape[0]}\ntrain-size: {train_size}\ntest-size: {test_size}"
-        )
+        size = df.shape[0]
+        data_info = {"data-szie": size, "train-size": train_size, "test-size": test_size}
+        json.dump(data_info, f, ensure_ascii=False, indent=4)
 
     print("Completed!")
     

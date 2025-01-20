@@ -3,7 +3,6 @@ data
 .venv
 .py_venv
 __pycache__
-.ruff_cache
 models/
 scripts/filter_tuned_params.sh
 # backend/
@@ -20,3 +19,5 @@ ed-analytics/
 *.gsheet
 *.xlsx
 src/model_checkpoints/
+mlruns/
+mlartifacts

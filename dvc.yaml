@@ -46,24 +46,24 @@ stages:
       - models.train.model
     outs:
     - src/model_checkpoints/trained
-  cross_validation:
-    cmd: python src/model_optimization/cross_validation.py data/split src/model_checkpoints/cross_valid
-    deps:
-    - data/split
-    - src/model_optimization/cross_validation.py
-    params:
-    - configs.yml:
-      - models.cross_validation.model
-      - models.cross_validation.n_split
-    outs:
-    - src/model_checkpoints/cross_valid
-  hyper_optimizer:
-    cmd: python src/model_optimization/hyper_opt.py data/split
-    deps:
-    - data/split
-    - src/model_optimization/hyper_opt.py
-    params:
-    - configs.yml:
-      - models.train.optimize
-    outs:
-    - src/model_checkpoints/tuned
+  # cross_validation:
+  #   cmd: python src/model_optimization/cross_validation.py data/split src/model_checkpoints/cross_valid
+  #   deps:
+  #   - data/split
+  #   - src/model_optimization/cross_validation.py
+  #   params:
+  #   - configs.yml:
+  #     - models.cross_validation.model
+  #     - models.cross_validation.n_split
+  #   outs:
+  #   - src/model_checkpoints/cross_valid
+  # hyper_optimizer:
+  #   cmd: python src/model_optimization/hyper_opt.py data/split
+  #   deps:
+  #   - data/split
+  #   - src/model_optimization/hyper_opt.py
+  #   params:
+  #   - configs.yml:
+  #     - models.train.optimize
+  #   outs:
+  #   - src/model_checkpoints/tuned

@@ -149,7 +149,7 @@ if __name__ == "__main__":
     with open(score_out_, "w", encoding="utf-8") as f:
         json.dump(scores_, f, ensure_ascii=False, indent=4)
 
-    plot_file_out_ = Path(cv_output_path_) / f"cv_scores_plot.png"
+    plot_file_out_ = Path(cv_output_path_) / f"cv_metrics_plot.png"
     create_model_comparison_plots(scores_, plot_file_out_)
 
     baseline_path = Path(params_loader["models"]["path"]) / "trained/metrics.json"
